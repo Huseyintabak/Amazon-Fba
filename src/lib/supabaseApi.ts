@@ -33,7 +33,7 @@ export const productsApi = {
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
     const { data, error } = await supabaseTyped
       .from('products')
-      .insert([product])
+      .insert([product] as any)
       .select()
       .single();
 
@@ -51,7 +51,7 @@ export const productsApi = {
   async update(id: string, product: Partial<Product>): Promise<Product> {
     const { data, error } = await supabaseTyped
       .from('products')
-      .update({ ...product, updated_at: new Date().toISOString() })
+      .update({ ...product, updated_at: new Date().toISOString() } as any)
       .eq('id', id)
       .select()
       .single();
@@ -115,7 +115,7 @@ export const shipmentsApi = {
   async create(shipment: Omit<Shipment, 'id' | 'created_at' | 'updated_at'>): Promise<Shipment> {
     const { data, error } = await supabaseTyped
       .from('shipments')
-      .insert([shipment])
+      .insert([shipment] as any)
       .select()
       .single();
 
@@ -127,7 +127,7 @@ export const shipmentsApi = {
   async update(id: string, shipment: Partial<Shipment>): Promise<Shipment> {
     const { data, error } = await supabaseTyped
       .from('shipments')
-      .update({ ...shipment, updated_at: new Date().toISOString() })
+      .update({ ...shipment, updated_at: new Date().toISOString() } as any)
       .eq('id', id)
       .select()
       .single();
@@ -170,7 +170,7 @@ export const shipmentsApi = {
     return {
       ...shipment,
       items: items || []
-    };
+    } as any;
   }
 };
 
@@ -198,7 +198,7 @@ export const shipmentItemsApi = {
   async create(item: Omit<ShipmentItem, 'id' | 'created_at'>): Promise<ShipmentItem> {
     const { data, error } = await supabaseTyped
       .from('shipment_items')
-      .insert([item])
+      .insert([item] as any)
       .select()
       .single();
 
@@ -210,7 +210,7 @@ export const shipmentItemsApi = {
   async update(id: string, item: Partial<Omit<ShipmentItem, 'id' | 'created_at'>>): Promise<ShipmentItem> {
     const { data, error } = await supabaseTyped
       .from('shipment_items')
-      .update(item)
+      .update(item as any)
       .eq('id', id)
       .select()
       .single();
@@ -245,7 +245,7 @@ export const shipmentItemsApi = {
 
     const { data, error } = await supabaseTyped
       .from('shipment_items')
-      .insert(items)
+      .insert(items as any)
       .select();
 
     if (error) throw error;

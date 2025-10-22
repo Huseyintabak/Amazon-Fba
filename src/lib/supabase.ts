@@ -166,7 +166,7 @@ export interface Database {
 }
 
 // Type-safe Supabase client
-export const supabaseTyped = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabaseTyped = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
