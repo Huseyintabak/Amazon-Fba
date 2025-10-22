@@ -68,9 +68,6 @@ export const validateProductData = (data: any): { isValid: boolean; errors: stri
  * Convert CSV data to Product object
  */
 export const csvToProduct = (data: any, existingProducts: any[]): any => {
-  // Generate unique ID
-  const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-  
   // Check for duplicate ASIN
   const isDuplicateASIN = existingProducts.some(p => p.asin === data['ASIN']);
   if (isDuplicateASIN) {
@@ -84,16 +81,13 @@ export const csvToProduct = (data: any, existingProducts: any[]): any => {
   }
   
   return {
-    id,
     name: data['Ürün Adı'] || '',
     asin: data['ASIN'] || '',
     merchant_sku: data['Merchant SKU'] || '',
     manufacturer_code: data['Üretici Kodu'] || '',
     manufacturer: data['Üretici'] || '',
     amazon_barcode: data['Amazon Barkod'] || '',
-    product_cost: data['Ürün Maliyeti'] ? parseFloat(data['Ürün Maliyeti']) : undefined,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    product_cost: data['Ürün Maliyeti'] ? parseFloat(data['Ürün Maliyeti']) : undefined
   };
 };
 

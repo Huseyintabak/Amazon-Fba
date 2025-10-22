@@ -6,7 +6,7 @@ import { processCSVFile, getCSVTemplate } from '../lib/csvImport';
 import { searchProducts, SearchFilters } from '../lib/smartSearch';
 import AdvancedSearch from '../components/AdvancedSearch';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { validateProduct, ValidationResult } from '../lib/validation';
+import { validateProduct } from '../lib/validation';
 
 const Products: React.FC = () => {
   const { showToast } = useToast();
@@ -27,13 +27,20 @@ const Products: React.FC = () => {
     duplicates: string[];
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Load products on component mount
   React.useEffect(() => {
     loadProducts();
-  }, [loadProducts]);
+  }, []); // Empty dependency array to run only once
 
   // Filtered products using advanced search
   const searchResult = useMemo(() => {
@@ -41,6 +48,43 @@ const Products: React.FC = () => {
   }, [products, searchFilters]);
 
   const filteredProducts = searchResult.items;
+  
+  // Sorting logic
+  const sortedProducts = useMemo(() => {
+    if (!sortField) return filteredProducts;
+    
+    return [...filteredProducts].sort((a, b) => {
+      let aValue = a[sortField as keyof typeof a];
+      let bValue = b[sortField as keyof typeof b];
+      
+      // Handle different data types
+      if (sortField === 'product_cost') {
+        aValue = aValue || 0;
+        bValue = bValue || 0;
+      } else if (sortField === 'created_at') {
+        aValue = new Date(aValue as string).getTime();
+        bValue = new Date(bValue as string).getTime();
+      } else {
+        aValue = String(aValue || '').toLowerCase();
+        bValue = String(bValue || '').toLowerCase();
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredProducts, sortField, sortDirection]);
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProducts = sortedProducts.slice(startIndex, endIndex);
+  
+  // Reset to first page when search filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchFilters]);
 
   const handleSearch = (filters: SearchFilters) => {
     setSearchFilters(filters);
@@ -52,6 +96,32 @@ const Products: React.FC = () => {
       manufacturer: 'all',
       priceRange: { min: 0, max: 1000 }
     });
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Same field, toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    // Reset to first page when sorting
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return ''; // No icon when not sorted
+    }
+    return sortDirection === 'asc' ? '↑' : '↓';
   };
 
   const handleDelete = async (productId: string) => {
@@ -109,16 +179,39 @@ const Products: React.FC = () => {
     }
   };
 
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (importResults?.success && importResults.products.length > 0) {
-      importResults.products.forEach(product => {
-        addProduct(product);
-      });
-      showToast(`${importResults.products.length} ürün başarıyla eklendi!`, 'success');
-      setShowImportModal(false);
-      setImportResults(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      try {
+        setIsLoading(true);
+        let successCount = 0;
+        let errorCount = 0;
+        
+        // Add each product to Supabase
+        for (const product of importResults.products) {
+          try {
+            await addProduct(product);
+            successCount++;
+          } catch (error) {
+            console.error('Error adding product:', error);
+            errorCount++;
+          }
+        }
+        
+        if (successCount > 0) {
+          showToast(`${successCount} ürün başarıyla eklendi!${errorCount > 0 ? ` ${errorCount} ürün atlandı (zaten mevcut).` : ''}`, 'success');
+        } else {
+          showToast('Hiçbir ürün eklenemedi!', 'error');
+        }
+        
+        setShowImportModal(false);
+        setImportResults(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } catch (error) {
+        showToast('Ürünler eklenirken hata oluştu!', 'error');
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -184,35 +277,92 @@ const Products: React.FC = () => {
       </div>
 
       {/* Products Table */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">
-            Ürünler ({filteredProducts.length})
-          </h3>
-          <p className="card-subtitle">
-            Toplam {products.length} ürün • {searchResult.appliedFilters.searchTerm ? 'Arama sonuçları' : 'Tüm ürünler'}
-            {searchResult.appliedFilters.manufacturer !== 'all' && ` • ${searchResult.appliedFilters.manufacturer} üreticisi`}
-            {searchResult.appliedFilters.priceRange && searchResult.appliedFilters.priceRange.min > 0 && 
-              ` • $${searchResult.appliedFilters.priceRange.min}-${searchResult.appliedFilters.priceRange.max} fiyat aralığı`}
-          </p>
-        </div>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">
+              Ürünler ({filteredProducts.length})
+            </h3>
+            <p className="card-subtitle">
+              Toplam {products.length} ürün • {searchResult.appliedFilters.searchTerm ? 'Arama sonuçları' : 'Tüm ürünler'}
+              {searchResult.appliedFilters.manufacturer !== 'all' && ` • ${searchResult.appliedFilters.manufacturer} üreticisi`}
+              {searchResult.appliedFilters.priceRange && searchResult.appliedFilters.priceRange.min > 0 && 
+                ` • $${searchResult.appliedFilters.priceRange.min}-${searchResult.appliedFilters.priceRange.max} fiyat aralığı`}
+              {totalPages > 1 && ` • Sayfa ${currentPage}/${totalPages}`}
+            </p>
+          </div>
 
         <div className="mobile-table">
           <table className="table min-w-full">
             <thead className="table-header">
               <tr>
-                <th className="table-header-cell w-64">Ürün Adı</th>
-                <th className="table-header-cell w-32">ASIN</th>
-                <th className="table-header-cell w-32">Merchant SKU</th>
-                <th className="table-header-cell w-24">Üretici</th>
-                <th className="table-header-cell w-24">Üretici Kodu</th>
-                <th className="table-header-cell w-28">Ürün Maliyeti</th>
-                <th className="table-header-cell w-24">Oluşturulma</th>
+                <th className="table-header-cell w-64">
+                  <button
+                    onClick={() => handleSort('name')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Ürün Adı</span>
+                    <span className="text-sm">{getSortIcon('name')}</span>
+                  </button>
+                </th>
+                <th className="table-header-cell w-32">
+                  <button
+                    onClick={() => handleSort('asin')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>ASIN</span>
+                    <span className="text-sm">{getSortIcon('asin')}</span>
+                  </button>
+                </th>
+                <th className="table-header-cell w-32">
+                  <button
+                    onClick={() => handleSort('merchant_sku')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Merchant SKU</span>
+                    <span className="text-sm">{getSortIcon('merchant_sku')}</span>
+                  </button>
+                </th>
+                <th className="table-header-cell w-24">
+                  <button
+                    onClick={() => handleSort('manufacturer')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Üretici</span>
+                    <span className="text-sm">{getSortIcon('manufacturer')}</span>
+                  </button>
+                </th>
+                <th className="table-header-cell w-24">
+                  <button
+                    onClick={() => handleSort('manufacturer_code')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Üretici Kodu</span>
+                    <span className="text-sm">{getSortIcon('manufacturer_code')}</span>
+                  </button>
+                </th>
+                <th className="table-header-cell w-28">
+                  <button
+                    onClick={() => handleSort('product_cost')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Ürün Maliyeti</span>
+                    <span className="text-sm">{getSortIcon('product_cost')}</span>
+                  </button>
+                </th>
+                <th className="table-header-cell w-24">
+                  <button
+                    onClick={() => handleSort('created_at')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Oluşturulma</span>
+                    <span className="text-sm">{getSortIcon('created_at')}</span>
+                  </button>
+                </th>
                 <th className="table-header-cell w-24">İşlemler</th>
               </tr>
             </thead>
             <tbody className="table-body">
-              {filteredProducts.map((product) => (
+              {paginatedProducts.map((product) => (
                 <tr key={product.id} className="table-row">
                   <td className="table-cell w-64">
                     <div className="flex items-center space-x-3">
@@ -304,7 +454,7 @@ const Products: React.FC = () => {
           </table>
         </div>
 
-        {filteredProducts.length === 0 && (
+        {paginatedProducts.length === 0 && (
           <div className="text-center py-12">
             <span className="mx-auto text-6xl text-gray-400">📦</span>
             <h3 className="mt-2 text-sm font-medium text-gray-900">
@@ -313,6 +463,89 @@ const Products: React.FC = () => {
             <p className="mt-1 text-sm text-gray-500">
               Arama kriterlerinize uygun ürün bulunmamaktadır.
             </p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+            <div className="flex justify-between flex-1 sm:hidden">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Önceki
+              </button>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sonraki
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">{startIndex + 1}</span>
+                  {' - '}
+                  <span className="font-medium">{Math.min(endIndex, filteredProducts.length)}</span>
+                  {' / '}
+                  <span className="font-medium">{filteredProducts.length}</span>
+                  {' sonuçtan'}
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Önceki</span>
+                    ←
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          currentPage === pageNum
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Sonraki</span>
+                    →
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -330,7 +563,7 @@ const Products: React.FC = () => {
               updateProduct(product.id, product);
               showToast('Ürün başarıyla güncellendi!', 'success');
             } else {
-              addProduct({ ...product, id: Date.now().toString() });
+              addProduct(product);
               showToast('Ürün başarıyla eklendi!', 'success');
             }
             setShowAddModal(false);

@@ -37,7 +37,13 @@ export const productsApi = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase create product error:', error);
+      if (error.code === '23505') {
+        throw new Error(`Ürün zaten mevcut: ${error.details || 'Duplicate key error'}`);
+      }
+      throw error;
+    }
     return data;
   },
 

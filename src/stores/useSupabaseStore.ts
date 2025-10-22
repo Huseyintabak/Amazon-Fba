@@ -77,8 +77,10 @@ export const useSupabaseStore = create<SupabaseState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const products = await productsApi.getAll();
+      console.log('Loaded products:', products.length);
       set({ products, isLoading: false });
     } catch (error) {
+      console.error('Error loading products:', error);
       set({ 
         isLoading: false, 
         error: error instanceof Error ? error.message : 'Failed to load products' 
