@@ -19,6 +19,7 @@ const NewShipment: React.FC = () => {
   });
 
   const [selectedProducts, setSelectedProducts] = useState<ShipmentItem[]>([]);
+  const [shipmentItems, setShipmentItems] = useState<ShipmentItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showProductSelector, setShowProductSelector] = useState(false);
   // const [editingItem, setEditingItem] = useState<ShipmentItem | null>(null);
