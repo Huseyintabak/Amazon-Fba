@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
-import { Product, Shipment, ShipmentItem } from '../types';
+import { Product, ShipmentItem } from '../types';
 
 const NewShipment: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
@@ -20,7 +20,7 @@ const NewShipment: React.FC = () => {
   const [selectedProducts, setSelectedProducts] = useState<ShipmentItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showProductSelector, setShowProductSelector] = useState(false);
-  const [editingItem, setEditingItem] = useState<ShipmentItem | null>(null);
+  // const [editingItem, setEditingItem] = useState<ShipmentItem | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [boxPreparationMode, setBoxPreparationMode] = useState(false);
@@ -130,7 +130,7 @@ const NewShipment: React.FC = () => {
   };
 
   const handleBarcodeScan = (barcode: string) => {
-    const product = mockProducts.find(p => p.amazon_barcode === barcode);
+    const product = products.find(p => p.amazon_barcode === barcode);
     if (product) {
       if (boxPreparationMode) {
         // Box preparation mode - mark as scanned
@@ -494,7 +494,7 @@ const NewShipment: React.FC = () => {
                           </div>
                           <div className="mt-2 text-sm text-red-700">
                             {missingItems.map(productId => {
-                              const product = mockProducts.find(p => p.id === productId);
+                              const product = products.find(p => p.id === productId);
                               return product ? product.name : 'Bilinmeyen Ürün';
                             }).join(', ')}
                           </div>
