@@ -53,9 +53,9 @@ export const validateProductData = (data: any): { isValid: boolean; errors: stri
     errors.push('Ürün Maliyeti geçerli bir sayı olmalı');
   }
   
-  // Validate Amazon barcode if provided (should be 13 digits)
-  if (data['Amazon Barkod'] && !/^[0-9]{13}$/.test(data['Amazon Barkod'])) {
-    errors.push('Amazon Barkod 13 haneli sayı olmalı');
+  // Validate Amazon barcode if provided (should be 10 digits)
+  if (data['Amazon Barkod'] && !/^[0-9]{10}$/.test(data['Amazon Barkod'])) {
+    errors.push('Amazon Barkod 10 haneli sayı olmalı');
   }
   
   return {
