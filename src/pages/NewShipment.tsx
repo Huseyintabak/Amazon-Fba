@@ -262,8 +262,9 @@ const NewShipment: React.FC = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    if (shipmentDate > today) {
-      newErrors.shipment_date = 'Sevkiyat tarihi gelecekte olamaz';
+    // Allow future dates for shipment planning
+    if (shipmentDate < today) {
+      newErrors.shipment_date = 'Sevkiyat tarihi geçmişte olamaz';
     }
     
     setErrors(newErrors);
