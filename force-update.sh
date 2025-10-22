@@ -71,7 +71,7 @@ npm ci
 
 # Build
 log "🔨 Yeni build oluşturuluyor..."
-npm run build
+npm run build:server
 
 # Build başarılı mı kontrol et
 if [ ! -d "dist" ]; then
