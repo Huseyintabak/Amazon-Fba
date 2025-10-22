@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
-import { mockProducts, mockShipments, getProductsByShipment } from '../lib/mockData';
+import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { Product, Shipment, ShipmentItem } from '../types';
 
 const NewShipment: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const isEditMode = Boolean(id);
   const { showToast } = useToast();
+  const { products, shipments, loadProducts, loadShipments, addShipment, updateShipment } = useSupabaseStore();
   const [formData, setFormData] = useState({
     fba_shipment_id: '',
     shipment_date: new Date().toISOString().split('T')[0],
@@ -31,10 +32,16 @@ const NewShipment: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantityInput, setQuantityInput] = useState(1);
 
+  // Load data on component mount
+  useEffect(() => {
+    loadProducts();
+    loadShipments();
+  }, [loadProducts, loadShipments]);
+
   // Load existing shipment data in edit mode
   useEffect(() => {
     if (isEditMode && id) {
-      const existingShipment = mockShipments.find(s => s.id === id);
+      const existingShipment = shipments.find(s => s.id === id);
       if (existingShipment) {
         setFormData({
           fba_shipment_id: existingShipment.fba_shipment_id,
@@ -44,22 +51,22 @@ const NewShipment: React.FC = () => {
           notes: existingShipment.notes || ''
         });
         
-        // Load existing shipment items
-        const existingItems = getProductsByShipment(id);
-        setSelectedProducts(existingItems);
+        // TODO: Load existing shipment items from Supabase
+        // const existingItems = getProductsByShipment(id);
+        // setSelectedProducts(existingItems);
       }
     }
-  }, [isEditMode, id]);
+  }, [isEditMode, id, shipments]);
 
   // Filtered products for selection
   const filteredProducts = useMemo(() => {
-    return mockProducts.filter(product => 
+    return products.filter(product => 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.asin.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.merchant_sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [products, searchTerm]);
 
   // Calculate unit shipping cost
   const totalQuantity = selectedProducts.reduce((sum, item) => sum + item.quantity, 0);
@@ -171,55 +178,55 @@ const NewShipment: React.FC = () => {
     }
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (validateForm()) {
-      const shipment: Shipment = {
-        id: isEditMode ? id! : Date.now().toString(),
-        ...formData,
-        status: 'draft',
-        created_at: isEditMode ? mockShipments.find(s => s.id === id)?.created_at || new Date().toISOString() : new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        total_shipping_cost: formData.total_shipping_cost
-      };
-      
-      // Update shipment items with calculated unit costs
-      const updatedItems = selectedProducts.map(item => ({
-        ...item,
-        shipment_id: shipment.id,
-        unit_shipping_cost: unitShippingCost
-      }));
-      
-      console.log(isEditMode ? 'Shipment updated:' : 'Draft saved:', { shipment, items: updatedItems });
-      showToast(
-        isEditMode ? 'Sevkiyat başarıyla güncellendi!' : 'Taslak başarıyla kaydedildi!', 
-        'success'
-      );
+      try {
+        const shipmentData = {
+          fba_shipment_id: formData.fba_shipment_id,
+          shipment_date: formData.shipment_date,
+          carrier_company: formData.carrier_company,
+          total_shipping_cost: formData.total_shipping_cost,
+          notes: formData.notes,
+          status: 'draft' as const
+        };
+
+        if (isEditMode && id) {
+          await updateShipment(id, shipmentData);
+          showToast('Sevkiyat başarıyla güncellendi!', 'success');
+        } else {
+          await addShipment(shipmentData);
+          showToast('Taslak başarıyla kaydedildi!', 'success');
+        }
+      } catch (error) {
+        console.error('Error saving shipment:', error);
+        showToast('Sevkiyat kaydedilirken hata oluştu!', 'error');
+      }
     }
   };
 
-  const handleCompleteShipment = () => {
+  const handleCompleteShipment = async () => {
     if (validateForm() && selectedProducts.length > 0) {
-      const shipment: Shipment = {
-        id: isEditMode ? id! : Date.now().toString(),
-        ...formData,
-        status: 'completed',
-        created_at: isEditMode ? mockShipments.find(s => s.id === id)?.created_at || new Date().toISOString() : new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        total_shipping_cost: formData.total_shipping_cost
-      };
-      
-      // Update shipment items with calculated unit costs
-      const updatedItems = selectedProducts.map(item => ({
-        ...item,
-        shipment_id: shipment.id,
-        unit_shipping_cost: unitShippingCost
-      }));
-      
-      console.log(isEditMode ? 'Shipment updated:' : 'Shipment completed:', { shipment, items: updatedItems });
-      showToast(
-        isEditMode ? 'Sevkiyat başarıyla güncellendi!' : 'Sevkiyat başarıyla tamamlandı!', 
-        'success'
-      );
+      try {
+        const shipmentData = {
+          fba_shipment_id: formData.fba_shipment_id,
+          shipment_date: formData.shipment_date,
+          carrier_company: formData.carrier_company,
+          total_shipping_cost: formData.total_shipping_cost,
+          notes: formData.notes,
+          status: 'completed' as const
+        };
+
+        if (isEditMode && id) {
+          await updateShipment(id, shipmentData);
+          showToast('Sevkiyat başarıyla güncellendi!', 'success');
+        } else {
+          await addShipment(shipmentData);
+          showToast('Sevkiyat başarıyla tamamlandı!', 'success');
+        }
+      } catch (error) {
+        console.error('Error completing shipment:', error);
+        showToast('Sevkiyat tamamlanırken hata oluştu!', 'error');
+      }
     }
   };
 

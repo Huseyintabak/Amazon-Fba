@@ -1,20 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft,
   Edit,
-  Trash2,
   Package,
   Truck,
   DollarSign,
   Calendar,
   FileText,
-  Barcode,
   CheckCircle,
   Clock,
-  AlertCircle,
-  Plus
+  AlertCircle
 } from 'lucide-react';
-import { mockShipments, getProductsByShipment } from '../lib/mockData';
+import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { Shipment, ShipmentItem } from '../types';
 
 interface ShipmentDetailProps {
@@ -22,12 +19,20 @@ interface ShipmentDetailProps {
 }
 
 const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId }) => {
-  const [shipment] = useState<Shipment | undefined>(
-    mockShipments.find(s => s.id === shipmentId)
-  );
-  const [shipmentItems] = useState<ShipmentItem[]>(
-    getProductsByShipment(shipmentId)
-  );
+  const { shipments, loadShipments } = useSupabaseStore();
+  const [shipment, setShipment] = useState<Shipment | undefined>();
+  const [shipmentItems, setShipmentItems] = useState<ShipmentItem[]>([]);
+
+  useEffect(() => {
+    loadShipments();
+  }, [loadShipments]);
+
+  useEffect(() => {
+    const foundShipment = shipments.find(s => s.id === shipmentId);
+    setShipment(foundShipment);
+    // TODO: Load shipment items from Supabase
+    setShipmentItems([]);
+  }, [shipments, shipmentId]);
 
   if (!shipment) {
     return (
