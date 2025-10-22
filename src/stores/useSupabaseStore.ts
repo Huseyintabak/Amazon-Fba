@@ -283,22 +283,6 @@ export const useSupabaseStore = create<SupabaseState>((set, get) => ({
     }
   },
 
-  // Load all data at once
-  loadAllData: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      await Promise.all([
-        get().loadProducts(),
-        get().loadShipments(),
-        get().loadDashboardStats()
-      ]);
-    } catch (error: any) {
-      set({ error: error.message });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
   // Utility actions
   clearError: () => set({ error: null }),
   reset: () => set({ 
