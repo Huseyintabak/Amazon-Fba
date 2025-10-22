@@ -290,10 +290,7 @@ export const useSupabaseStore = create<SupabaseState>((set, get) => ({
       await Promise.all([
         get().loadProducts(),
         get().loadShipments(),
-        get().loadDashboardStats(),
-        get().loadMonthlyShipmentData(),
-        get().loadCarrierPerformance(),
-        get().loadProductReports()
+        get().loadDashboardStats()
       ]);
     } catch (error: any) {
       set({ error: error.message });
