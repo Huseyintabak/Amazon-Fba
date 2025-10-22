@@ -7,8 +7,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
+  // LineChart,
+  // Line,
   PieChart,
   Pie,
   Cell,
@@ -16,10 +16,10 @@ import {
   AreaChart
 } from 'recharts';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
-import { Shipment } from '../types';
+// import { Shipment } from '../types';
 
 const Reports: React.FC = () => {
-  const { shipments, products, loadAllData } = useSupabaseStore();
+  const { shipments, loadAllData } = useSupabaseStore();
   const [dateRange, setDateRange] = useState({
     start: '2024-01-01',
     end: '2024-12-31'
