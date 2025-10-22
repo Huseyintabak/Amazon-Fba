@@ -1,0 +1,4 @@
+name,asin,merchant_sku,manufacturer_code,manufacturer,amazon_barcode,product_cost
+Test Ürün 1,B07TEST001,SKU001,MC001,Test Manufacturer,1234567890123,15.99
+Test Ürün 2,B07TEST002,SKU002,MC002,Test Manufacturer,1234567890124,25.50
+Test Ürün 3,B07TEST003,SKU003,MC003,Another Manufacturer,1234567890125,35.75
