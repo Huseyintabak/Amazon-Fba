@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { shipmentItemsApi } from '../lib/supabaseApi';
 import { Product, ShipmentItem } from '../types';
 
 const NewShipment: React.FC = () => {
@@ -51,12 +52,23 @@ const NewShipment: React.FC = () => {
           notes: existingShipment.notes || ''
         });
         
-        // TODO: Load existing shipment items from Supabase
-        // const existingItems = getProductsByShipment(id);
-        // setSelectedProducts(existingItems);
+        // Load existing shipment items from Supabase
+        loadShipmentItems(id);
       }
     }
   }, [isEditMode, id, shipments]);
+
+  // Load shipment items function
+  const loadShipmentItems = async (shipmentId: string) => {
+    try {
+      const items = await shipmentItemsApi.getByShipmentId(shipmentId);
+      setShipmentItems(items);
+      setSelectedProducts(items);
+    } catch (error) {
+      console.error('Error loading shipment items:', error);
+      showToast('Sevkiyat ürünleri yüklenirken hata oluştu!', 'error');
+    }
+  };
 
   // Filtered products for selection
   const filteredProducts = useMemo(() => {
@@ -190,12 +202,20 @@ const NewShipment: React.FC = () => {
           status: 'draft' as const
         };
 
+        let shipmentId: string;
         if (isEditMode && id) {
           await updateShipment(id, shipmentData);
+          shipmentId = id;
           showToast('Sevkiyat başarıyla güncellendi!', 'success');
         } else {
-          await addShipment(shipmentData);
+          const newShipment = await addShipment(shipmentData);
+          shipmentId = newShipment.id;
           showToast('Taslak başarıyla kaydedildi!', 'success');
+        }
+
+        // Save shipment items
+        if (selectedProducts.length > 0) {
+          await saveShipmentItems(shipmentId);
         }
       } catch (error) {
         console.error('Error saving shipment:', error);
@@ -216,17 +236,51 @@ const NewShipment: React.FC = () => {
           status: 'completed' as const
         };
 
+        let shipmentId: string;
         if (isEditMode && id) {
           await updateShipment(id, shipmentData);
+          shipmentId = id;
           showToast('Sevkiyat başarıyla güncellendi!', 'success');
         } else {
-          await addShipment(shipmentData);
+          const newShipment = await addShipment(shipmentData);
+          shipmentId = newShipment.id;
           showToast('Sevkiyat başarıyla tamamlandı!', 'success');
         }
+
+        // Save shipment items
+        await saveShipmentItems(shipmentId);
       } catch (error) {
         console.error('Error completing shipment:', error);
         showToast('Sevkiyat tamamlanırken hata oluştu!', 'error');
       }
+    }
+  };
+
+  // Save shipment items function
+  const saveShipmentItems = async (shipmentId: string) => {
+    try {
+      // Delete existing items if in edit mode
+      if (isEditMode) {
+        await shipmentItemsApi.deleteByShipmentId(shipmentId);
+      }
+
+      // Create new items
+      if (selectedProducts.length > 0) {
+        const itemsToCreate = selectedProducts.map(item => ({
+          shipment_id: shipmentId,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_shipping_cost: item.unit_shipping_cost,
+          barcode_scanned: item.barcode_scanned || false
+        }));
+
+        await shipmentItemsApi.createBulk(itemsToCreate);
+        console.log('Shipment items saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving shipment items:', error);
+      showToast('Sevkiyat ürünleri kaydedilirken hata oluştu!', 'error');
+      throw error;
     }
   };
 
