@@ -86,9 +86,14 @@ fi
 log "🔄 Nginx yeniden yükleniyor..."
 systemctl reload nginx
 
-# Service restart
+# Service restart (eğer varsa)
 log "🔄 Service yeniden başlatılıyor..."
-systemctl restart amazon-fba-tracker
+if systemctl list-units --type=service | grep -q "amazon-fba-tracker"; then
+    systemctl restart amazon-fba-tracker
+    success "Service yeniden başlatıldı"
+else
+    warning "Service bulunamadı, ./fix-service.sh ile oluşturun"
+fi
 
 success "🎉 Güncelleme tamamlandı!"
 log "🌐 Uygulama: http://$(hostname -I | awk '{print $1}')"
