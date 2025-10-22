@@ -83,10 +83,22 @@ npm run preview
 
 ## 🚀 Deployment
 
-### GitHub Pages
+### GitHub Pages (Otomatik)
 ```bash
 # Otomatik deployment
 ./deploy.sh
+```
+
+### Sunucu Deployment (Manuel)
+```bash
+# Tam kurulum (ilk kez)
+sudo ./server-deploy.sh
+
+# Sadece güncelleme
+sudo ./update.sh
+
+# Docker ile deployment
+sudo ./docker-deploy.sh
 ```
 
 ### Manuel Deployment
