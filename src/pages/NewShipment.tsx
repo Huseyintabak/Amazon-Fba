@@ -19,7 +19,6 @@ const NewShipment: React.FC = () => {
   });
 
   const [selectedProducts, setSelectedProducts] = useState<ShipmentItem[]>([]);
-  const [shipmentItems, setShipmentItems] = useState<ShipmentItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showProductSelector, setShowProductSelector] = useState(false);
   // const [editingItem, setEditingItem] = useState<ShipmentItem | null>(null);
@@ -63,7 +62,6 @@ const NewShipment: React.FC = () => {
   const loadShipmentItems = async (shipmentId: string) => {
     try {
       const items = await shipmentItemsApi.getByShipmentId(shipmentId);
-      setShipmentItems(items);
       setSelectedProducts(items);
     } catch (error) {
       console.error('Error loading shipment items:', error);

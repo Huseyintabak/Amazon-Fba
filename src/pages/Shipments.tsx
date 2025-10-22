@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { getProductsByShipment } from '../lib/mockData';
-import { Shipment, ShipmentItem } from '../types';
+import { Shipment } from '../types';
 import { searchShipments, SearchFilters } from '../lib/smartSearch';
 import AdvancedSearch from '../components/AdvancedSearch';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { validateShipment, ValidationResult } from '../lib/validation';
+// import { validateShipment, ValidationResult } from '../lib/validation';
 
 const Shipments: React.FC = () => {
   const { shipments, deleteShipment, loadShipments } = useSupabaseStore();
@@ -17,7 +17,7 @@ const Shipments: React.FC = () => {
   });
   const [showDeleteModal, setShowDeleteModal] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationResult | null>(null);
+  // const [validationErrors, setValidationErrors] = useState<ValidationResult | null>(null);
 
   // Load shipments on component mount
   React.useEffect(() => {

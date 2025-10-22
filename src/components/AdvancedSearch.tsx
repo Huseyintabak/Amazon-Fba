@@ -52,18 +52,18 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
       // Mock data'dan öneriler oluştur (gerçek uygulamada API'den gelecek)
       const mockItems = searchType === 'product' 
         ? [
-            { name: 'Wireless Bluetooth Headphones', asin: 'B07KG5CBQ6', merchant_sku: '2L-3RP4-NL31' },
-            { name: 'Smart Fitness Tracker', asin: 'B08XYZ1234', merchant_sku: 'FT-2024-001' },
-            { name: 'USB-C Charging Cable', asin: 'B09ABC5678', merchant_sku: 'USB-C-3FT' }
+            { id: '1', name: 'Wireless Bluetooth Headphones', asin: 'B07KG5CBQ6', merchant_sku: '2L-3RP4-NL31', manufacturer_code: '', manufacturer: '', amazon_barcode: '', product_cost: 0, created_at: '', updated_at: '' },
+            { id: '2', name: 'Smart Fitness Tracker', asin: 'B08XYZ1234', merchant_sku: 'FT-2024-001', manufacturer_code: '', manufacturer: '', amazon_barcode: '', product_cost: 0, created_at: '', updated_at: '' },
+            { id: '3', name: 'USB-C Charging Cable', asin: 'B09ABC5678', merchant_sku: 'USB-C-3FT', manufacturer_code: '', manufacturer: '', amazon_barcode: '', product_cost: 0, created_at: '', updated_at: '' }
           ]
         : [
-            { fba_shipment_id: 'FBA123456789', carrier_company: 'UPS', notes: 'Priority shipping' },
-            { fba_shipment_id: 'FBA987654321', carrier_company: 'FedEx', notes: 'Standard shipping' }
+            { id: '1', fba_shipment_id: 'FBA123456789', shipment_date: '', carrier_company: 'UPS', total_shipping_cost: 0, notes: 'Priority shipping', status: 'completed' as const, created_at: '', updated_at: '' },
+            { id: '2', fba_shipment_id: 'FBA987654321', shipment_date: '', carrier_company: 'FedEx', total_shipping_cost: 0, notes: 'Standard shipping', status: 'completed' as const, created_at: '', updated_at: '' }
           ];
 
       const searchFields = searchType === 'product' 
-        ? ['name', 'asin', 'merchant_sku'] as const
-        : ['fba_shipment_id', 'carrier_company', 'notes'] as const;
+        ? ['name', 'asin', 'merchant_sku']
+        : ['fba_shipment_id', 'carrier_company', 'notes'];
 
       const newSuggestions = generateSearchSuggestions(mockItems, searchTerm, searchFields);
       setSuggestions(newSuggestions);

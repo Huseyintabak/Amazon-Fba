@@ -310,7 +310,7 @@ const Dashboard: React.FC = () => {
                   fill="#8884d8"
                   dataKey="count"
                 >
-                  {carrierData.map((entry, index) => (
+                  {carrierData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

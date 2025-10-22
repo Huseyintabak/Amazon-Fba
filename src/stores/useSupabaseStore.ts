@@ -5,8 +5,7 @@ import {
   shipmentsApi, 
   shipmentItemsApi, 
   dashboardApi,
-  checkConnection,
-  getTableCounts
+  checkConnection
 } from '../lib/supabaseApi';
 
 interface SupabaseState {
@@ -33,7 +32,7 @@ interface SupabaseState {
   deleteProduct: (id: string) => Promise<void>;
 
   // Shipment actions
-  addShipment: (shipment: Omit<Shipment, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  addShipment: (shipment: Omit<Shipment, 'id' | 'created_at' | 'updated_at'>) => Promise<Shipment>;
   updateShipment: (id: string, shipment: Partial<Shipment>) => Promise<void>;
   deleteShipment: (id: string) => Promise<void>;
 
@@ -192,11 +191,13 @@ export const useSupabaseStore = create<SupabaseState>((set, get) => ({
         shipments: [newShipment, ...state.shipments], 
         isLoading: false 
       }));
+      return newShipment;
     } catch (error) {
       set({ 
         isLoading: false, 
         error: error instanceof Error ? error.message : 'Failed to add shipment' 
       });
+      throw error;
     }
   },
 

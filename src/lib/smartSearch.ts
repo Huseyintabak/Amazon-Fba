@@ -137,7 +137,7 @@ export const searchShipments = (
 export const generateSearchSuggestions = (
   items: (Product | Shipment)[],
   searchTerm: string,
-  searchFields: (keyof (Product | Shipment))[]
+  searchFields: string[]
 ): string[] => {
   if (!searchTerm.trim() || searchTerm.length < 2) return [];
 
@@ -146,7 +146,7 @@ export const generateSearchSuggestions = (
 
   items.forEach(item => {
     searchFields.forEach(field => {
-      const value = item[field];
+      const value = (item as any)[field];
       if (typeof value === 'string' && value.toLowerCase().includes(query)) {
         suggestions.add(value);
       }

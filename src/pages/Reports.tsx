@@ -84,7 +84,7 @@ const Reports: React.FC = () => {
     }, {} as Record<string, { count: number; totalCost: number }>);
 
     const totalShipments = filteredShipments.length;
-    const totalCost = filteredShipments.reduce((sum, s) => sum + s.total_shipping_cost, 0);
+    // const totalCost = filteredShipments.reduce((sum, s) => sum + s.total_shipping_cost, 0);
 
     return Object.entries(carriers).map(([carrier, data]) => ({
       name: carrier,
@@ -302,7 +302,7 @@ const Reports: React.FC = () => {
                   fill="#8884d8"
                   dataKey="count"
                 >
-                  {carrierData.map((entry, index) => (
+                  {carrierData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -328,7 +328,7 @@ const Reports: React.FC = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {statusData.map((entry, index) => (
+                  {statusData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
