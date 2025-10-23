@@ -223,7 +223,7 @@
   }
   
   .modal-content {
-    @apply relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white;
+    @apply relative top-20 mx-auto p-5 border shadow-lg rounded-md bg-white;
   }
   
   /* Loading Components */
