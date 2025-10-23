@@ -17,7 +17,7 @@ const Profile: React.FC = () => {
   const { user } = useAuth();
   const { subscription, usage, planType } = useSubscription();
   const { showToast } = useToast();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [, setProfile] = useState<Profile | null>(null);
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [loading, setLoading] = useState(true);

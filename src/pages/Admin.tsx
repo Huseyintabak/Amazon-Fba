@@ -111,7 +111,7 @@ const Admin: React.FC = () => {
   // Gift premium to user
   const handleGiftPremium = async (userId: string, durationDays: number) => {
     try {
-      const { data, error } = await supabase.rpc('admin_gift_premium', {
+      const { error } = await supabase.rpc('admin_gift_premium', {
         p_user_id: userId,
         p_duration_days: durationDays,
       });
@@ -132,7 +132,7 @@ const Admin: React.FC = () => {
     if (!confirm('Premium planı iptal etmek istediğinize emin misiniz?')) return;
 
     try {
-      const { data, error } = await supabase.rpc('admin_revoke_premium', {
+      const { error } = await supabase.rpc('admin_revoke_premium', {
         p_user_id: userId,
       });
 
@@ -464,8 +464,8 @@ const GiftPremiumModal: React.FC<{
   onDurationChange: (duration: number) => void;
   onGift: (duration: number) => void;
   onClose: () => void;
-}> = ({ user, duration, onDurationChange, onGift, onClose }) => {
-  const [customDuration, setCustomDuration] = useState(duration);
+}> = ({ user, onGift, onClose }) => {
+  const [customDuration, setCustomDuration] = useState(30);
 
   const presetDurations = [
     { label: '1 Hafta', value: 7, icon: '📅' },
