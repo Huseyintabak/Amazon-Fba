@@ -18,6 +18,7 @@ import Reports from './pages/Reports';
 import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
 import Admin from './pages/Admin';
+import Suppliers from './pages/Suppliers';
 import { initGA, trackPageView } from './lib/analytics';
 
 // Wrapper component for ShipmentDetail to get params
@@ -221,19 +222,29 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Admin />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        {/* 404 redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Admin />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/suppliers"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Suppliers />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* 404 redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

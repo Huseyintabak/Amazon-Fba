@@ -27,6 +27,62 @@ export interface ProfitCalculation {
   profit_margin: number;
 }
 
+// Supplier Management Types
+export interface Supplier {
+  id: string;
+  user_id?: string;
+  name: string;
+  company_name?: string;
+  email?: string;
+  phone?: string;
+  country?: string;
+  address?: string;
+  contact_person?: string;
+  website?: string;
+  notes?: string;
+  payment_terms?: string;
+  currency?: string;
+  lead_time_days?: number;
+  minimum_order_quantity?: number;
+  rating?: number;
+  is_active?: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  user_id?: string;
+  supplier_id: string;
+  po_number: string;
+  order_date: string;
+  expected_delivery_date?: string;
+  actual_delivery_date?: string;
+  status: 'draft' | 'submitted' | 'confirmed' | 'shipped' | 'received' | 'cancelled';
+  total_amount?: number;
+  currency?: string;
+  payment_status?: 'pending' | 'partial' | 'paid' | 'refunded';
+  shipping_cost?: number;
+  tax_amount?: number;
+  notes?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  purchase_order_id: string;
+  product_id?: string;
+  product_name: string;
+  product_sku?: string;
+  quantity: number;
+  unit_price: number;
+  total_price?: number;
+  received_quantity?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface Shipment {
   id: string;
   user_id?: string;
