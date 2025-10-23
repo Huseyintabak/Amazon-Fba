@@ -1,5 +1,5 @@
 import { supabase, supabaseTyped } from './supabase';
-import { Product, Shipment, ShipmentItem, DashboardStats } from '../types';
+import { Product, Shipment, ShipmentItem, DashboardStats, PurchaseOrder, PurchaseOrderItem } from '../types';
 
 // Helper to get current user ID from session
 const getUserId = async (): Promise<string> => {
@@ -401,5 +401,168 @@ export const getTableCounts = async () => {
   } catch (error) {
     console.error('Error getting table counts:', error);
     return { products: 0, shipments: 0, items: 0 };
+  }
+};
+
+// =====================================================
+// PURCHASE ORDERS API
+// =====================================================
+
+export const purchaseOrdersApi = {
+  // Get all purchase orders for current user
+  async getAll(): Promise<PurchaseOrder[]> {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select(`
+        *,
+        supplier:suppliers(id, name, company_name, country)
+      `)
+      .order('order_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Get single purchase order by ID
+  async getById(id: string): Promise<PurchaseOrder | null> {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select(`
+        *,
+        supplier:suppliers(id, name, company_name, email, phone, country),
+        items:purchase_order_items(*)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Create new purchase order
+  async create(po: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
+    const userId = await getUserId();
+    
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .insert([{ ...po, user_id: userId }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Update purchase order
+  async update(id: string, updates: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete purchase order
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('purchase_orders')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  // Get PO stats
+  async getStats() {
+    const userId = await getUserId();
+    
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('status, total_amount, payment_status')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    const stats = {
+      total: data?.length || 0,
+      draft: data?.filter(po => po.status === 'draft').length || 0,
+      submitted: data?.filter(po => po.status === 'submitted').length || 0,
+      confirmed: data?.filter(po => po.status === 'confirmed').length || 0,
+      shipped: data?.filter(po => po.status === 'shipped').length || 0,
+      received: data?.filter(po => po.status === 'received').length || 0,
+      cancelled: data?.filter(po => po.status === 'cancelled').length || 0,
+      totalValue: data?.reduce((sum, po) => sum + (po.total_amount || 0), 0) || 0,
+      pendingPayment: data?.filter(po => po.payment_status === 'pending').length || 0,
+    };
+
+    return stats;
+  }
+};
+
+// =====================================================
+// PURCHASE ORDER ITEMS API
+// =====================================================
+
+export const purchaseOrderItemsApi = {
+  // Get items for a purchase order
+  async getByPOId(poId: string): Promise<PurchaseOrderItem[]> {
+    const { data, error } = await supabase
+      .from('purchase_order_items')
+      .select('*')
+      .eq('purchase_order_id', poId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Add item to purchase order
+  async create(item: Partial<PurchaseOrderItem>): Promise<PurchaseOrderItem> {
+    const { data, error } = await supabase
+      .from('purchase_order_items')
+      .insert([item])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Add multiple items at once
+  async createMany(items: Partial<PurchaseOrderItem>[]): Promise<PurchaseOrderItem[]> {
+    const { data, error } = await supabase
+      .from('purchase_order_items')
+      .insert(items)
+      .select();
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Update item
+  async update(id: string, updates: Partial<PurchaseOrderItem>): Promise<PurchaseOrderItem> {
+    const { data, error } = await supabase
+      .from('purchase_order_items')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete item
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('purchase_order_items')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   }
 };
