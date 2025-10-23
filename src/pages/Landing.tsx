@@ -176,13 +176,83 @@ const Landing: React.FC = () => {
             {/* Hero Image / Dashboard Preview */}
             <div className="mt-16 animate-fade-in animation-delay-600">
               <div className="relative mx-auto max-w-5xl">
-                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10"></div>
-                <div className="bg-white rounded-2xl shadow-2xl p-2 transform hover:scale-105 transition-all duration-500">
-                  <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-8 aspect-video flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-6xl mb-4">📊</div>
-                      <p className="text-gray-600 font-medium">Dashboard Önizleme</p>
-                      <p className="text-sm text-gray-500 mt-2">Modern ve kullanıcı dostu arayüz</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 pointer-events-none"></div>
+                <div className="bg-white rounded-2xl shadow-2xl p-3 transform hover:scale-105 transition-all duration-500">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 overflow-hidden">
+                    {/* Dashboard Mockup */}
+                    <div className="space-y-4">
+                      {/* Top Stats Bar */}
+                      <div className="grid grid-cols-4 gap-3">
+                        {[
+                          { icon: '📦', label: 'Ürünler', value: '156', color: 'from-blue-500 to-blue-600' },
+                          { icon: '🚚', label: 'Sevkiyatlar', value: '23', color: 'from-purple-500 to-purple-600' },
+                          { icon: '💰', label: 'Toplam Değer', value: '$45K', color: 'from-green-500 to-green-600' },
+                          { icon: '📈', label: 'Bu Ay', value: '+12%', color: 'from-pink-500 to-pink-600' },
+                        ].map((stat, i) => (
+                          <div key={i} className="bg-white rounded-lg p-3 shadow-sm">
+                            <div className={`text-2xl mb-1 bg-gradient-to-br ${stat.color} w-8 h-8 rounded flex items-center justify-center`}>
+                              <span className="text-sm">{stat.icon}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">{stat.label}</div>
+                            <div className="text-lg font-bold text-gray-900">{stat.value}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Charts Row */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Chart 1 */}
+                        <div className="bg-white rounded-lg p-4 shadow-sm">
+                          <div className="text-xs font-medium text-gray-600 mb-2">Aylık Trend</div>
+                          <div className="flex items-end space-x-1 h-20">
+                            {[40, 60, 45, 70, 55, 80, 65, 85].map((height, i) => (
+                              <div
+                                key={i}
+                                className="flex-1 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t"
+                                style={{ height: `${height}%` }}
+                              ></div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Chart 2 - Pie Chart */}
+                        <div className="bg-white rounded-lg p-4 shadow-sm">
+                          <div className="text-xs font-medium text-gray-600 mb-2">Kategori Dağılımı</div>
+                          <div className="flex items-center justify-center h-20">
+                            <div className="relative w-16 h-16">
+                              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400"></div>
+                              <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                                <span className="text-xs font-bold text-gray-700">156</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Recent Items List */}
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <div className="text-xs font-medium text-gray-600 mb-2">Son Ürünler</div>
+                        <div className="space-y-2">
+                          {[1, 2, 3].map((item) => (
+                            <div key={item} className="flex items-center space-x-2">
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded flex items-center justify-center text-xs">
+                                📦
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="h-2 bg-gray-200 rounded" style={{ width: `${80 - item * 15}%` }}></div>
+                              </div>
+                              <div className="text-xs text-gray-400">•••</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Overlay Label */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="bg-white/95 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border-2 border-blue-200">
+                        <p className="text-sm font-bold text-gray-900">Gerçek Dashboard Önizleme</p>
+                      </div>
                     </div>
                   </div>
                 </div>
