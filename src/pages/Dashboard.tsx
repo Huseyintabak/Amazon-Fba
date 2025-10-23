@@ -23,7 +23,19 @@ const Dashboard: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   
   const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
-  const recentShipments = shipments.slice(0, 5);
+  
+  // Recent items for activity feed
+  const recentProducts = useMemo(() => {
+    return [...products]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5);
+  }, [products]);
+
+  const recentShipments = useMemo(() => {
+    return [...shipments]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5);
+  }, [shipments]);
 
   // Enhanced Stats Calculations
   const enhancedStats = useMemo(() => {
@@ -262,46 +274,128 @@ const Dashboard: React.FC = () => {
         />
       </div>
 
+      {/* Recent Activity Section */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        {/* Recent Products */}
+        <div className="card">
+          <div className="border-b border-gray-200 pb-4 mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Son Eklenen Ürünler</h3>
+              <p className="text-sm text-gray-500 mt-1">En son eklediğiniz ürünler</p>
+            </div>
+            <Link to="/products" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+              Tümü →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {recentProducts.length > 0 ? (
+              recentProducts.map((product) => (
+                <Link
+                  key={product.id}
+                  to={`/products/${product.id}`}
+                  className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span className="text-lg">📦</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {product.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          ASIN: {product.asin}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      {product.product_cost && (
+                        <p className="text-sm font-semibold text-gray-900">
+                          ${product.product_cost.toFixed(2)}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400">
+                        {new Date(product.created_at).toLocaleDateString('tr-TR', { 
+                          day: 'numeric', 
+                          month: 'short' 
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="py-12 text-center text-gray-400">
+                <span className="text-3xl block mb-2">📦</span>
+                <p className="text-sm">Henüz ürün eklemediniz</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Recent Shipments */}
         <div className="card">
-          <div className="border-b border-gray-200 pb-5">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Son Sevkiyatlar
-            </h3>
+          <div className="border-b border-gray-200 pb-4 mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Son Sevkiyatlar</h3>
+              <p className="text-sm text-gray-500 mt-1">En son oluşturduğunuz sevkiyatlar</p>
+            </div>
+            <Link to="/shipments" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+              Tümü →
+            </Link>
           </div>
-          <div className="divide-y divide-gray-200">
-            {recentShipments.map((shipment) => (
-              <div key={shipment.id} className="py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      <span className="text-gray-400">🚚</span>
+          <div className="space-y-3">
+            {recentShipments.length > 0 ? (
+              recentShipments.map((shipment) => (
+                <Link
+                  key={shipment.id}
+                  to={`/shipments/${shipment.id}`}
+                  className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <span className="text-lg">🚚</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {shipment.fba_shipment_id}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {shipment.carrier_company}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {shipment.fba_shipment_id}
+                    <div className="text-right ml-4">
+                      <p className="text-sm font-semibold text-gray-900">
+                        ${shipment.total_shipping_cost.toFixed(2)}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {shipment.carrier_company} • {shipment.shipment_date}
+                      <p className="text-xs text-gray-400">
+                        {new Date(shipment.shipment_date).toLocaleDateString('tr-TR', { 
+                          day: 'numeric', 
+                          month: 'short' 
+                        })}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm font-semibold text-gray-900">
-                      ${shipment.total_shipping_cost.toFixed(2)}
-                    </span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                       shipment.status === 'completed' 
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {shipment.status === 'completed' ? 'Tamamlandı' : 'Taslak'}
+                      {shipment.status === 'completed' ? '✓ Tamamlandı' : '⏳ Taslak'}
                     </span>
                   </div>
-                </div>
+                </Link>
+              ))
+            ) : (
+              <div className="py-12 text-center text-gray-400">
+                <span className="text-3xl block mb-2">🚚</span>
+                <p className="text-sm">Henüz sevkiyat oluşturmadınız</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
