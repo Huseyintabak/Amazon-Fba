@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useSubscription } from '../hooks/useSubscription';
+import { useBulkSelection } from '../hooks/useBulkSelection';
 import { Product } from '../types';
 import { processCSVFile, getCSVTemplate } from '../lib/csvImport';
 import { searchProducts, SearchFilters } from '../lib/smartSearch';
@@ -9,12 +10,14 @@ import AdvancedSearch from '../components/AdvancedSearch';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UsageBanner from '../components/UsageBanner';
 import UpgradeModal from '../components/UpgradeModal';
+import BulkOperations from '../components/BulkOperations';
 import { validateProduct } from '../lib/validation';
 
 const Products: React.FC = () => {
   const { showToast } = useToast();
   const { products, addProduct, updateProduct, deleteProduct, loadProducts } = useSupabaseStore();
   const { canCreateProduct, hasFeature } = useSubscription();
+  const bulkSelection = useBulkSelection<Product>();
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     searchTerm: '',
     manufacturer: 'all',
@@ -248,6 +251,51 @@ const Products: React.FC = () => {
     showToast('CSV şablonu indirildi', 'success');
   };
 
+  // Bulk Operations Handlers
+  const handleBulkEdit = async (updates: Partial<Product>) => {
+    try {
+      setIsLoading(true);
+      let successCount = 0;
+      
+      for (const productId of bulkSelection.selectedItems) {
+        try {
+          await updateProduct(productId, updates);
+          successCount++;
+        } catch (error) {
+          console.error(`Error updating product ${productId}:`, error);
+        }
+      }
+      
+      showToast(`${successCount} ürün başarıyla güncellendi!`, 'success');
+    } catch (error) {
+      showToast('Ürünler güncellenirken hata oluştu!', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      setIsLoading(true);
+      let successCount = 0;
+      
+      for (const productId of bulkSelection.selectedItems) {
+        try {
+          await deleteProduct(productId);
+          successCount++;
+        } catch (error) {
+          console.error(`Error deleting product ${productId}:`, error);
+        }
+      }
+      
+      showToast(`${successCount} ürün başarıyla silindi!`, 'success');
+    } catch (error) {
+      showToast('Ürünler silinirken hata oluştu!', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6 max-w-full">
@@ -316,6 +364,15 @@ const Products: React.FC = () => {
           <table className="table min-w-full">
             <thead className="table-header">
               <tr>
+                <th className="table-header-cell w-12">
+                  <input
+                    type="checkbox"
+                    checked={bulkSelection.isAllSelected(paginatedProducts)}
+                    onChange={() => bulkSelection.toggleAll(paginatedProducts)}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    title="Tümünü seç/kaldır"
+                  />
+                </th>
                 <th className="table-header-cell w-64">
                   <button
                     onClick={() => handleSort('name')}
@@ -393,7 +450,18 @@ const Products: React.FC = () => {
             </thead>
             <tbody className="table-body">
               {paginatedProducts.map((product) => (
-                <tr key={product.id} className="table-row">
+                <tr 
+                  key={product.id} 
+                  className={`table-row ${bulkSelection.isSelected(product.id) ? 'bg-blue-50' : ''}`}
+                >
+                  <td className="table-cell w-12">
+                    <input
+                      type="checkbox"
+                      checked={bulkSelection.isSelected(product.id)}
+                      onChange={() => bulkSelection.toggleSelection(product.id)}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                  </td>
                   <td className="table-cell w-64">
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0">
@@ -654,6 +722,16 @@ const Products: React.FC = () => {
         onClose={() => setShowUpgradeModal(false)}
         limitType={upgradeLimitType}
         feature={upgradeLimitType === 'general' ? 'CSV İçe/Dışa Aktarma' : undefined}
+      />
+
+      {/* Bulk Operations */}
+      <BulkOperations
+        selectedCount={bulkSelection.selectedCount}
+        selectedItems={bulkSelection.selectedItems}
+        allItems={products}
+        onBulkEdit={handleBulkEdit}
+        onBulkDelete={handleBulkDelete}
+        onClearSelection={bulkSelection.clearSelection}
       />
     </div>
   );
