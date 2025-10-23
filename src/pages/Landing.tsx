@@ -13,6 +13,57 @@ const Landing: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const aiFeatures = [
+    {
+      icon: '🤖',
+      title: 'AI Chat Asistanı',
+      description: 'GPT-4 destekli AI asistanınız her zaman yanınızda. İşletmeniz hakkında soru sorun, anlık öneriler alın.',
+      gradient: 'from-purple-500 to-indigo-600',
+      badge: 'YENİ',
+      isPro: false, // Free plan'da sınırlı
+    },
+    {
+      icon: '📈',
+      title: 'AI Trend Analizi',
+      description: 'Satış trendlerinizi AI ile analiz edin. Gelecek 3 ay için tahminler alın, işletmenizi büyütün.',
+      gradient: 'from-blue-500 to-cyan-600',
+      badge: 'PRO',
+      isPro: true,
+    },
+    {
+      icon: '📦',
+      title: 'AI Stok Optimizasyonu',
+      description: 'Akıllı stok önerileri ile stokout risklerini minimize edin. Hangi ürünü ne zaman sipariş etmelisiniz?',
+      gradient: 'from-green-500 to-emerald-600',
+      badge: 'PRO',
+      isPro: true,
+    },
+    {
+      icon: '📣',
+      title: 'AI Pazarlama Stratejileri',
+      description: 'AI destekli pazarlama önerileri alın. Amazon PPC, sosyal medya, influencer stratejileri ve daha fazlası.',
+      gradient: 'from-pink-500 to-rose-600',
+      badge: 'PRO',
+      isPro: true,
+    },
+    {
+      icon: '🎯',
+      title: 'Ürün Performans Analizi',
+      description: 'Her ürünü AI ile detaylı analiz edin. Performans skoru, içgörüler, öneriler, riskler ve güçlü yanlar.',
+      gradient: 'from-orange-500 to-amber-600',
+      badge: 'PRO',
+      isPro: true,
+    },
+    {
+      icon: '💰',
+      title: 'AI Fiyat Optimizasyonu',
+      description: 'Optimal fiyatı AI belirlesin. Kar maksimizasyonu için akıllı fiyat önerileri ve etki analizi.',
+      gradient: 'from-yellow-500 to-orange-600',
+      badge: 'PRO',
+      isPro: true,
+    },
+  ];
+
   const features = [
     {
       icon: '📦',
@@ -27,28 +78,28 @@ const Landing: React.FC = () => {
       gradient: 'from-purple-500 to-purple-600',
     },
     {
+      icon: '💹',
+      title: 'ROI & Kar Hesaplama',
+      description: 'Otomatik kar hesaplamaları, ROI tracking, maliyet analizi. Hangi ürün ne kadar kazandırıyor?',
+      gradient: 'from-emerald-500 to-emerald-600',
+    },
+    {
       icon: '📊',
       title: 'Gelişmiş Raporlar',
       description: 'Ürün ve sevkiyat analizlerinizi görselleştirin. Kârlılık raporları ve trend analizleri.',
       gradient: 'from-pink-500 to-pink-600',
     },
     {
-      icon: '📥',
-      title: 'CSV İçe/Dışa Aktarma',
-      description: 'Toplu ürün yükleyin, verilerinizi Excel ile paylaşın. Veri yönetimi çok kolay.',
-      gradient: 'from-green-500 to-green-600',
+      icon: '🏭',
+      title: 'Tedarikçi Yönetimi',
+      description: 'Tedarikçilerinizi organize edin. İletişim bilgileri, ödeme şartları, notlar ve satın alma emirleri.',
+      gradient: 'from-cyan-500 to-cyan-600',
     },
     {
-      icon: '💰',
-      title: 'Maliyet Takibi',
-      description: 'Ürün maliyetleri, sevkiyat giderleri, FBA ücretleri. Kar marjlarınızı net görün.',
+      icon: '⚡',
+      title: 'Toplu İşlemler',
+      description: 'CSV import/export, toplu düzenleme, toplu silme. Yüzlerce ürünü tek seferde yönetin.',
       gradient: 'from-yellow-500 to-yellow-600',
-    },
-    {
-      icon: '🔒',
-      title: 'Güvenli ve Hızlı',
-      description: 'Verileriniz şifreli ve güvenli sunucularda. 7/24 erişim, her yerden çalışın.',
-      gradient: 'from-red-500 to-red-600',
     },
   ];
 
@@ -285,12 +336,86 @@ const Landing: React.FC = () => {
         </div>
       </div>
 
-      {/* Features Section */}
+      {/* AI Features Section - HERO */}
+      <div className="relative bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 py-24 overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-lg px-4 py-2 rounded-full mb-6">
+              <span className="text-2xl">🤖</span>
+              <span className="text-sm font-semibold text-white">Powered by GPT-4o-mini</span>
+              <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">YENİ</span>
+            </div>
+            <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6">
+              AI ile İşletmenizi
+              <br />
+              <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                Yeni Seviyeye Taşıyın
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Yapay zeka destekli özelliklerimiz sayesinde rakiplerinizin önüne geçin.
+              <br />
+              Trend analizi, stok optimizasyonu, pazarlama stratejileri ve daha fazlası!
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {aiFeatures.map((feature, index) => (
+              <div
+                key={index}
+                className="group relative bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-xl hover:bg-white/20 transform hover:-translate-y-2 transition-all duration-300 border border-white/20"
+              >
+                {/* Badge */}
+                <div className="absolute top-4 right-4">
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full ${
+                    feature.isPro 
+                      ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white' 
+                      : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white'
+                  }`}>
+                    {feature.badge}
+                  </span>
+                </div>
+
+                <div className={`w-16 h-16 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  <span className="text-4xl">{feature.icon}</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-300 leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-16">
+            <Link
+              to="/pricing"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-lg font-bold rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200"
+            >
+              <span>🚀 AI Özelliklerini Keşfedin</span>
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <p className="text-sm text-gray-400 mt-4">
+              Pro plan ile tüm AI özelliklerine sınırsız erişim
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Core Features Section */}
       <div id="features" className="bg-gray-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Her Şey Bir Arada
+              Temel Özellikler
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Amazon FBA işinizi yönetmek için ihtiyacınız olan tüm araçlar

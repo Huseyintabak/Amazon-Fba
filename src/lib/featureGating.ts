@@ -39,20 +39,33 @@ export const getFeatureLabel = (feature: keyof PlanLimits): string => {
 export const getPlanFeatures = (planType: 'free' | 'pro'): string[] => {
   if (planType === 'free') {
     return [
-      '10 Ürün',
-      '5 Sevkiyat/Ay',
-      'Temel Raporlar',
-      'Email Destek',
+      '📦 10 Ürün',
+      '🚚 5 Sevkiyat/Ay',
+      '🏭 Tedarikçi Yönetimi',
+      '📊 Temel Dashboard',
+      '💬 AI Chat Asistanı (10 mesaj/gün)',
+      '📧 Email Destek',
     ];
   }
 
   return [
-    'Sınırsız Ürün',
-    'Sınırsız Sevkiyat',
-    'CSV İçe/Dışa Aktarma',
-    'Gelişmiş Raporlar ve Analizler',
-    'Öncelikli Destek',
-    'Amazon SP-API Entegrasyonu (Yakında)',
+    '📦 Sınırsız Ürün',
+    '🚚 Sınırsız Sevkiyat',
+    '🏭 Gelişmiş Tedarikçi & Satın Alma Yönetimi',
+    '🤖 Sınırsız AI Chat Asistanı',
+    '📈 AI Trend Analizi & Satış Tahminleri',
+    '📦 AI Stok Optimizasyonu & Uyarıları',
+    '📣 AI Pazarlama Stratejileri',
+    '🎯 Ürün Performans Analizi (AI)',
+    '💰 Fiyat Optimizasyonu (AI)',
+    '💹 ROI & Kar Hesaplayıcı',
+    '📊 Gelişmiş Raporlar & Analizler',
+    '📥 CSV İçe/Dışa Aktarma',
+    '🔍 Gelişmiş Filtreler & Arama',
+    '⚡ Toplu İşlemler',
+    '🎨 Özel Filtre Presetleri',
+    '🏆 Öncelikli Destek',
+    '🔌 Amazon SP-API Entegrasyonu (Yakında)',
   ];
 };
 
