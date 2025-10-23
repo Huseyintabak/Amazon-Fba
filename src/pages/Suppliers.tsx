@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { Supplier } from '../types';
 import { supabase } from '../lib/supabase';
+import SupplierPerformance from '../components/SupplierPerformance';
 
 const Suppliers: React.FC = () => {
   const { showToast } = useToast();
@@ -9,6 +10,7 @@ const Suppliers: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [activeTab, setActiveTab] = useState<'list' | 'performance'>('list');
 
   useEffect(() => {
     loadSuppliers();
@@ -84,7 +86,36 @@ const Suppliers: React.FC = () => {
         </button>
       </div>
 
-      {/* Suppliers Grid */}
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <div className="flex space-x-8">
+          <button
+            onClick={() => setActiveTab('list')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'list'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            📋 Tedarikçi Listesi ({suppliers.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('performance')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'performance'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            📊 Performans Analizi
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'list' ? (
+        <>
+          {/* Suppliers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {suppliers.map((supplier) => (
           <div
@@ -167,6 +198,13 @@ const Suppliers: React.FC = () => {
           <button onClick={handleAdd} className="mt-4 btn-primary">
             ➕ İlk Tedarikçiyi Ekle
           </button>
+        </div>
+      )}
+        </>
+      ) : (
+        /* Performance Tab */
+        <div className="card">
+          <SupplierPerformance />
         </div>
       )}
 
