@@ -8,8 +8,23 @@ export interface Product {
   manufacturer?: string;
   amazon_barcode?: string;
   product_cost?: number;
+  // Profit Calculator fields
+  amazon_price?: number;
+  referral_fee_percent?: number;
+  fulfillment_fee?: number;
+  advertising_cost?: number;
+  estimated_profit?: number;
+  profit_margin?: number;
   created_at: string;
   updated_at?: string;
+}
+
+export interface ProfitCalculation {
+  gross_revenue: number;
+  referral_fee: number;
+  total_costs: number;
+  net_profit: number;
+  profit_margin: number;
 }
 
 export interface Shipment {

@@ -370,6 +370,15 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('product_cost')}</span>
                   </button>
                 </th>
+                <th className="table-header-cell w-32">
+                  <button
+                    onClick={() => handleSort('estimated_profit')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Tahmini Kar</span>
+                    <span className="text-sm">{getSortIcon('estimated_profit')}</span>
+                  </button>
+                </th>
                 <th className="table-header-cell w-24">
                   <button
                     onClick={() => handleSort('created_at')}
@@ -437,6 +446,26 @@ const Products: React.FC = () => {
                       </span>
                     ) : (
                       <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="table-cell w-32">
+                    {product.estimated_profit !== undefined && product.estimated_profit !== null ? (
+                      <div className="flex flex-col">
+                        <span className={`font-bold ${product.estimated_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ${product.estimated_profit.toFixed(2)}
+                        </span>
+                        {product.profit_margin !== undefined && (
+                          <span className={`text-xs ${
+                            product.profit_margin >= 20 ? 'text-green-600' : 
+                            product.profit_margin >= 10 ? 'text-yellow-600' : 
+                            'text-red-600'
+                          }`}>
+                            {product.profit_margin.toFixed(1)}% margin
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">Hesaplanmadı</span>
                     )}
                   </td>
                   <td className="table-cell w-24">
@@ -646,9 +675,15 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
     manufacturer: product?.manufacturer || '',
     amazon_barcode: product?.amazon_barcode || '',
     product_cost: product?.product_cost || 0,
+    // Profit Calculator fields
+    amazon_price: product?.amazon_price || 0,
+    referral_fee_percent: product?.referral_fee_percent || 15,
+    fulfillment_fee: product?.fulfillment_fee || 0,
+    advertising_cost: product?.advertising_cost || 0,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showProfitCalculator, setShowProfitCalculator] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -778,6 +813,127 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
               />
             </div>
           </div>
+
+          {/* Profit Calculator Toggle */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowProfitCalculator(!showProfitCalculator)}
+              className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 rounded-lg border border-green-200 transition-all"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl">💰</span>
+                <span className="font-medium text-gray-900">Kar Hesaplama (Premium)</span>
+              </div>
+              <span className="text-gray-600">{showProfitCalculator ? '▲' : '▼'}</span>
+            </button>
+          </div>
+
+          {/* Profit Calculator Fields */}
+          {showProfitCalculator && (
+            <div className="space-y-4 pt-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div>
+                <label className="label">🏷️ Amazon Satış Fiyatı ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.amazon_price || ''}
+                  onChange={(e) => setFormData({ ...formData, amazon_price: parseFloat(e.target.value) || 0 })}
+                  className="input-field"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="label">🏪 Referral Fee (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={formData.referral_fee_percent || ''}
+                  onChange={(e) => setFormData({ ...formData, referral_fee_percent: parseFloat(e.target.value) || 15 })}
+                  className="input-field"
+                  placeholder="15"
+                />
+                <p className="text-xs text-gray-500 mt-1">Genelde %15</p>
+              </div>
+
+              <div>
+                <label className="label">🚚 FBA Fulfillment Fee ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.fulfillment_fee || ''}
+                  onChange={(e) => setFormData({ ...formData, fulfillment_fee: parseFloat(e.target.value) || 0 })}
+                  className="input-field"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="label">📊 Reklam Maliyeti (PPC/Birim) ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.advertising_cost || ''}
+                  onChange={(e) => setFormData({ ...formData, advertising_cost: parseFloat(e.target.value) || 0 })}
+                  className="input-field"
+                  placeholder="0.00"
+                />
+              </div>
+
+              {/* Profit Preview */}
+              {formData.amazon_price > 0 && (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                  <h4 className="font-semibold text-gray-900 mb-2">💰 Kar Önizleme</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Satış Fiyatı:</span>
+                      <span className="font-semibold">${formData.amazon_price.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Referral Fee:</span>
+                      <span className="text-red-600">-${((formData.amazon_price * (formData.referral_fee_percent || 0)) / 100).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Ürün Maliyeti:</span>
+                      <span className="text-red-600">-${(formData.product_cost || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Fulfillment Fee:</span>
+                      <span className="text-red-600">-${(formData.fulfillment_fee || 0).toFixed(2)}</span>
+                    </div>
+                    {formData.advertising_cost > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Reklam:</span>
+                        <span className="text-red-600">-${(formData.advertising_cost || 0).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-green-300 pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-900">Net Kar:</span>
+                        <span className={`text-lg font-bold ${
+                          (formData.amazon_price - (formData.product_cost || 0) - (formData.fulfillment_fee || 0) - (formData.advertising_cost || 0) - ((formData.amazon_price * (formData.referral_fee_percent || 0)) / 100)) >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          ${(formData.amazon_price - (formData.product_cost || 0) - (formData.fulfillment_fee || 0) - (formData.advertising_cost || 0) - ((formData.amazon_price * (formData.referral_fee_percent || 0)) / 100)).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-xs text-gray-600">Kar Marjı:</span>
+                        <span className="text-sm font-semibold text-green-700">
+                          {((((formData.amazon_price - (formData.product_cost || 0) - (formData.fulfillment_fee || 0) - (formData.advertising_cost || 0) - ((formData.amazon_price * (formData.referral_fee_percent || 0)) / 100)) / formData.amazon_price) * 100) || 0).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4">
             <button
