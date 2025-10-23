@@ -11,6 +11,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import UsageBanner from '../components/UsageBanner';
 import UpgradeModal from '../components/UpgradeModal';
 import BulkOperations from '../components/BulkOperations';
+import ProductPerformanceAnalyzer from '../components/ProductPerformanceAnalyzer';
+import PriceOptimizerButton from '../components/PriceOptimizerButton';
 import { validateProduct } from '../lib/validation';
 import { supabase } from '../lib/supabase';
 
@@ -596,28 +598,43 @@ const Products: React.FC = () => {
                     </div>
                   </td>
                   <td className="table-cell w-24">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEdit(product)}
-                        className="action-btn action-btn-edit"
-                        title="Düzenle"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => setShowDeleteModal(product)}
-                        className="action-btn action-btn-delete"
-                        title="Sil"
-                      >
-                        🗑️
-                      </button>
-                      <button
-                        onClick={() => window.location.href = `/products/${product.id}`}
-                        className="action-btn action-btn-view"
-                        title="Detayları Görüntüle"
-                      >
-                        👁️
-                      </button>
+                    <div className="flex flex-col space-y-2">
+                      {/* Standard Actions */}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEdit(product)}
+                          className="action-btn action-btn-edit"
+                          title="Düzenle"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteModal(product)}
+                          className="action-btn action-btn-delete"
+                          title="Sil"
+                        >
+                          🗑️
+                        </button>
+                        <button
+                          onClick={() => window.location.href = `/products/${product.id}`}
+                          className="action-btn action-btn-view"
+                          title="Detayları Görüntüle"
+                        >
+                          👁️
+                        </button>
+                      </div>
+                      
+                      {/* AI Actions */}
+                      <div className="flex items-center space-x-2">
+                        <ProductPerformanceAnalyzer product={product} />
+                        <PriceOptimizerButton 
+                          product={product}
+                          onPriceUpdate={(newPrice) => {
+                            updateProduct(product.id, { amazon_price: newPrice });
+                            showToast('Fiyat güncellendi!', 'success');
+                          }}
+                        />
+                      </div>
                     </div>
                   </td>
                 </tr>

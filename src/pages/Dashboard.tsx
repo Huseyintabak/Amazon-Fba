@@ -12,6 +12,7 @@ import {
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useAuth } from '../contexts/AuthContext';
 import WelcomeModal from '../components/WelcomeModal';
+import AIInsights from '../components/AIInsights';
 
 const Dashboard: React.FC = () => {
   const { products, shipments, loadAllData } = useSupabaseStore();
@@ -288,6 +289,14 @@ const Dashboard: React.FC = () => {
             color="text-purple-600"
           />
         </div>
+
+        {/* AI Insights */}
+        <AIInsights
+          products={filteredProducts}
+          totalRevenue={enhancedStats.totalRevenue}
+          totalProfit={roiSummary.totalProfit}
+          averageROI={roiSummary.avgROI}
+        />
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
