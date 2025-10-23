@@ -61,7 +61,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
@@ -80,61 +80,160 @@ function AnalyticsTracker() {
 }
 
 function AppRoutes() {
+  const { isAuthenticated, loading } = useAuth();
+
   return (
     <>
       <AnalyticsTracker />
       <Routes>
-        {/* Public routes */}
-      <Route path="/landing" element={<Landing />} />
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/signup"
-        element={
-          <PublicRoute>
-            <SignUp />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/forgot-password"
-        element={
-          <PublicRoute>
-            <ForgotPassword />
-          </PublicRoute>
-        }
-      />
+        {/* Root redirects based on auth status */}
+        <Route 
+          path="/" 
+          element={
+            loading ? (
+              <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+              </div>
+            ) : isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Landing />
+            )
+          } 
+        />
 
-      {/* Protected routes */}
-      <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/products/:id" element={<ProductDetail />} />
-                <Route path="/shipments" element={<Shipments />} />
-                <Route path="/shipments/new" element={<NewShipment />} />
-                <Route path="/shipments/:id" element={<ShipmentDetailWrapper />} />
-                <Route path="/shipments/:id/edit" element={<NewShipment />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+        {/* Public routes */}
+        <Route path="/landing" element={<Landing />} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <SignUp />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPassword />
+            </PublicRoute>
+          }
+        />
+        <Route path="/pricing" element={<Pricing />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/products"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Products />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/products/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProductDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipments"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Shipments />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipments/new"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <NewShipment />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipments/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ShipmentDetailWrapper />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipments/:id/edit"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <NewShipment />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Reports />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Admin />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* 404 redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
