@@ -23,6 +23,7 @@ import AIHub from './pages/AIHub';
 import PurchaseOrders from './pages/PurchaseOrders';
 import NewPurchaseOrder from './pages/NewPurchaseOrder';
 import PurchaseOrderDetail from './pages/PurchaseOrderDetail';
+import ScheduledReports from './pages/ScheduledReports';
 import { initGA, trackPageView } from './lib/analytics';
 
 // Wrapper component for ShipmentDetail to get params
@@ -282,6 +283,16 @@ function AppRoutes() {
                 <ProtectedRoute>
                   <Layout>
                     <PurchaseOrderDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/scheduled-reports"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ScheduledReports />
                   </Layout>
                 </ProtectedRoute>
               }

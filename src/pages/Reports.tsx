@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   BarChart, 
   Bar, 
@@ -232,11 +233,20 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Raporlar ve Analizler</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Sevkiyat verilerinizi analiz edin ve detaylı raporlar görüntüleyin
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Raporlar ve Analizler</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Sevkiyat verilerinizi analiz edin ve detaylı raporlar görüntüleyin
+          </p>
+        </div>
+        <Link
+          to="/scheduled-reports"
+          className="btn-primary flex items-center space-x-2"
+        >
+          <span>📧</span>
+          <span>Planlanmış Raporlar</span>
+        </Link>
       </div>
 
       {/* Tabs */}
