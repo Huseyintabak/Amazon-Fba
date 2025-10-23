@@ -14,7 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import WelcomeModal from '../components/WelcomeModal';
 
 const Dashboard: React.FC = () => {
-  const { products, shipments, dashboardStats, loadAllData } = useSupabaseStore();
+  const { products, shipments, loadAllData } = useSupabaseStore();
   const { user, profile } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
