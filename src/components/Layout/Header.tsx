@@ -17,6 +17,7 @@ const Header: React.FC = () => {
     { name: 'Sevkiyatlar', href: '/shipments', icon: '🚚' },
     { name: 'Tedarikçiler', href: '/suppliers', icon: '🏭' },
     { name: 'Raporlar', href: '/reports', icon: '📊' },
+    { name: 'AI Hub', href: '/ai-hub', icon: '🤖' },
     { name: 'Profil', href: '/profile', icon: '👤' },
     ...(profile?.role === 'admin' ? [{ name: 'Admin', href: '/admin', icon: '👨‍💼' }] : []),
   ];

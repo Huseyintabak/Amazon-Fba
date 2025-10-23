@@ -12,9 +12,6 @@ import {
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useAuth } from '../contexts/AuthContext';
 import WelcomeModal from '../components/WelcomeModal';
-import AIInsights from '../components/AIInsights';
-import AIChatAssistant from '../components/AIChatAssistant';
-import AIInsightsHub from '../components/AIInsightsHub';
 
 const Dashboard: React.FC = () => {
   const { products, shipments, loadAllData } = useSupabaseStore();
@@ -292,19 +289,31 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
-        {/* AI Insights */}
-        <AIInsights
-          products={filteredProducts}
-          totalRevenue={enhancedStats.totalRevenue}
-          totalProfit={roiSummary.totalProfit}
-          averageROI={roiSummary.avgROI}
-        />
-
-        {/* AI Insights Hub - Advanced AI Features */}
-        <AIInsightsHub
-          products={filteredProducts}
-          shipments={filteredShipments}
-        />
+        {/* AI Hub Quick Access */}
+        <Link 
+          to="/ai-hub"
+          className="block bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+                <span className="text-4xl">🤖</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-1 flex items-center">
+                  AI Hub ile İşletmenizi Analiz Edin
+                  <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Yeni</span>
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Yapay zeka destekli içgörüler, trend analizi, stok optimizasyonu ve pazarlama önerileri
+                </p>
+              </div>
+            </div>
+            <div className="text-gray-400">
+              <span className="text-2xl">→</span>
+            </div>
+          </div>
+        </Link>
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -521,15 +530,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* AI Chat Assistant - Floating Button */}
-      <AIChatAssistant
-        products={filteredProducts}
-        shipments={filteredShipments}
-        totalRevenue={enhancedStats.totalRevenue}
-        totalProfit={roiSummary.totalProfit}
-        averageROI={roiSummary.avgROI}
-      />
     </>
   );
 };

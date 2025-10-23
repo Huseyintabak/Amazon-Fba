@@ -19,6 +19,7 @@ import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
 import Admin from './pages/Admin';
 import Suppliers from './pages/Suppliers';
+import AIHub from './pages/AIHub';
 import { initGA, trackPageView } from './lib/analytics';
 
 // Wrapper component for ShipmentDetail to get params
@@ -238,6 +239,16 @@ function AppRoutes() {
                 <ProtectedRoute>
                   <Layout>
                     <Suppliers />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ai-hub"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AIHub />
                   </Layout>
                 </ProtectedRoute>
               }
