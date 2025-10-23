@@ -68,7 +68,6 @@ export const productsApi = {
       p_asin: product.asin,
       p_merchant_sku: product.merchant_sku,
       p_manufacturer_code: product.manufacturer_code || null,
-      p_manufacturer: product.manufacturer || null,
       p_amazon_barcode: product.amazon_barcode || null,
       p_product_cost: product.product_cost || 0
     });

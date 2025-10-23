@@ -57,18 +57,13 @@ export const searchProducts = (
       'name',
       'asin',
       'merchant_sku',
-      'manufacturer',
       'manufacturer_code',
-      'amazon_barcode'
+      'amazon_barcode',
+      'supplier_name'
     ]);
   }
 
-  // Üretici filtresi
-  if (filters.manufacturer && filters.manufacturer !== 'all') {
-    filteredProducts = filteredProducts.filter(
-      product => product.manufacturer === filters.manufacturer
-    );
-  }
+  // Üretici filtresi - removed (replaced with supplier)
 
   // Fiyat aralığı filtresi
   if (filters.priceRange) {

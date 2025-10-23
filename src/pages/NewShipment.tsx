@@ -75,7 +75,7 @@ const NewShipment: React.FC = () => {
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.asin.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.merchant_sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase())
+      product.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [products, searchTerm]);
 

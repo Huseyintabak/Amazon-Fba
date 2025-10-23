@@ -1,24 +1,16 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  BarChart, 
-  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
   AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell
+  Area
 } from 'recharts';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import WelcomeModal from '../components/WelcomeModal';
 
 const Dashboard: React.FC = () => {
@@ -27,8 +19,6 @@ const Dashboard: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
   const [roiSummary, setROISummary] = useState({ totalProfit: 0, avgROI: 0, topProduct: '' });
-  
-  const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
 
   // Filter shipments by date range
   const filteredShipments = useMemo(() => {
@@ -196,9 +186,6 @@ const Dashboard: React.FC = () => {
       .sort((a, b) => (b.estimated_profit || 0) - (a.estimated_profit || 0))
       .slice(0, 5);
   }, [filteredProducts]);
-
-  // Color palette
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   // Get trend label based on date range
   const getTrendLabel = () => {

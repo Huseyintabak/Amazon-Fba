@@ -7,7 +7,6 @@ export const mockProducts: Product[] = [
     asin: 'B07KG5CBQ6',
     merchant_sku: '2L-3RP4-NL31',
     manufacturer_code: 'BGE38',
-    manufacturer: 'BROSS',
     amazon_barcode: '1234567890123',
     product_cost: 25.99,
     created_at: '2024-01-15T10:00:00Z'
@@ -18,7 +17,6 @@ export const mockProducts: Product[] = [
     asin: 'B08XYZ1234',
     merchant_sku: 'FT-2024-001',
     manufacturer_code: 'FT001',
-    manufacturer: 'FitTech',
     amazon_barcode: '2345678901234',
     product_cost: 89.99,
     created_at: '2024-01-16T09:30:00Z'
@@ -29,7 +27,6 @@ export const mockProducts: Product[] = [
     asin: 'B09ABC5678',
     merchant_sku: 'USB-C-3FT',
     manufacturer_code: 'UC001',
-    manufacturer: 'CablePro',
     amazon_barcode: '3456789012345',
     product_cost: 12.99,
     created_at: '2024-01-17T14:20:00Z'
@@ -40,7 +37,6 @@ export const mockProducts: Product[] = [
     asin: 'B10DEF9012',
     merchant_sku: 'PB-10000',
     manufacturer_code: 'PB001',
-    manufacturer: 'PowerMax',
     amazon_barcode: '4567890123456',
     product_cost: 45.99,
     created_at: '2024-01-18T11:45:00Z'
@@ -51,7 +47,6 @@ export const mockProducts: Product[] = [
     asin: 'B11GHI3456',
     merchant_sku: 'BS-2024',
     manufacturer_code: 'BS001',
-    manufacturer: 'SoundWave',
     amazon_barcode: '5678901234567',
     product_cost: 65.99,
     created_at: '2024-01-19T16:10:00Z'

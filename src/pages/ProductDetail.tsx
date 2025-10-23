@@ -149,13 +149,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId }) => {
                 </div>
               </div>
 
-              {product.manufacturer && (
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Üretici</div>
-                  <div className="text-sm">{product.manufacturer}</div>
-                </div>
-              )}
-
               {product.manufacturer_code && (
                 <div>
                   <div className="text-sm font-medium text-gray-500">Üretici Kodu</div>

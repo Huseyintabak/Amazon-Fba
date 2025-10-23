@@ -20,7 +20,7 @@ import { supabase } from '../lib/supabase';
 import { CostBreakdown, ROIPerformance } from '../types';
 
 const Reports: React.FC = () => {
-  const { shipments, products, loadAllData } = useSupabaseStore();
+  const { shipments, loadAllData } = useSupabaseStore();
   const [activeTab, setActiveTab] = useState<'shipments' | 'roi'>('shipments');
   const [dateRange, setDateRange] = useState({
     start: '2024-01-01',

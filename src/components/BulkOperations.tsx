@@ -153,28 +153,6 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedProducts, onClose
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Manufacturer */}
-          <div className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
-            <label className="flex items-center space-x-3 mb-3">
-              <input
-                type="checkbox"
-                checked={fieldsToUpdate.has('manufacturer')}
-                onChange={() => toggleField('manufacturer')}
-                className="w-5 h-5 text-blue-600"
-              />
-              <span className="font-medium text-gray-900">Üretici</span>
-            </label>
-            {fieldsToUpdate.has('manufacturer') && (
-              <input
-                type="text"
-                value={updates.manufacturer || ''}
-                onChange={(e) => setUpdates({ ...updates, manufacturer: e.target.value })}
-                className="input-field"
-                placeholder="Üretici adı"
-              />
-            )}
-          </div>
-
           {/* Manufacturer Code */}
           <div className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
             <label className="flex items-center space-x-3 mb-3">
