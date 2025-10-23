@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import WelcomeModal from '../components/WelcomeModal';
 import AIInsights from '../components/AIInsights';
 import AIChatAssistant from '../components/AIChatAssistant';
+import AIInsightsHub from '../components/AIInsightsHub';
 
 const Dashboard: React.FC = () => {
   const { products, shipments, loadAllData } = useSupabaseStore();
@@ -297,6 +298,12 @@ const Dashboard: React.FC = () => {
           totalRevenue={enhancedStats.totalRevenue}
           totalProfit={roiSummary.totalProfit}
           averageROI={roiSummary.avgROI}
+        />
+
+        {/* AI Insights Hub - Advanced AI Features */}
+        <AIInsightsHub
+          products={filteredProducts}
+          shipments={filteredShipments}
         />
 
         {/* Charts Row */}
