@@ -72,9 +72,9 @@ Sen Amazon FBA işletmesi için AI asistansın. Kullanıcıya Türkçe yanıt ve
 
 İŞLETME VERİLERİ:
 - Toplam Ürün: ${products.length}
-- Toplam Gelir: $${totalRevenue.toFixed(2)}
-- Toplam Kar: $${totalProfit.toFixed(2)}
-- Ortalama ROI: ${averageROI.toFixed(1)}%
+- Toplam Gelir: $${(totalRevenue || 0).toFixed(2)}
+- Toplam Kar: $${(totalProfit || 0).toFixed(2)}
+- Ortalama ROI: ${(averageROI || 0).toFixed(1)}%
 - Toplam Sevkiyat: ${shipments.length}
 
 EN KARLI 5 ÜRÜN:
