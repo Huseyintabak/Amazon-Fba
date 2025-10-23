@@ -1,23 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import AIInsights from '../components/AIInsights';
 import AIInsightsHub from '../components/AIInsightsHub';
-import AIChatAssistant from '../components/AIChatAssistant';
 
 const AIHub: React.FC = () => {
   const { products, shipments } = useSupabaseStore();
 
-  // Load data on mount
-  React.useEffect(() => {
-    // Data is already loaded by the store
-  }, []);
-
   // Calculate metrics
-  const totalRevenue = products.reduce((sum, p) => sum + ((p.revenue_generated || 0)), 0);
-  const totalProfit = products.reduce((sum, p) => sum + (p.estimated_profit || 0), 0);
-  const averageROI = products.length > 0 
-    ? products.reduce((sum, p) => sum + (p.roi_percentage || 0), 0) / products.length 
-    : 0;
+  const metrics = useMemo(() => {
+    const totalRevenue = products.reduce((sum, p) => sum + ((p.revenue_generated || 0)), 0);
+    const totalProfit = products.reduce((sum, p) => sum + (p.estimated_profit || 0), 0);
+    const averageROI = products.length > 0 
+      ? products.reduce((sum, p) => sum + (p.roi_percentage || 0), 0) / products.length 
+      : 0;
+    
+    return { totalRevenue, totalProfit, averageROI };
+  }, [products]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -46,9 +44,9 @@ const AIHub: React.FC = () => {
         {/* Quick AI Insights */}
         <AIInsights
           products={products}
-          totalRevenue={totalRevenue}
-          totalProfit={totalProfit}
-          averageROI={averageROI}
+          totalRevenue={metrics.totalRevenue}
+          totalProfit={metrics.totalProfit}
+          averageROI={metrics.averageROI}
         />
 
         {/* Advanced AI Analysis */}
@@ -181,14 +179,7 @@ const AIHub: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating AI Chat Assistant */}
-      <AIChatAssistant
-        products={products}
-        shipments={shipments}
-        totalRevenue={totalRevenue}
-        totalProfit={totalProfit}
-        averageROI={averageROI}
-      />
+      {/* Note: AI Chat Assistant is now globally available via Layout component */}
     </div>
   );
 };
