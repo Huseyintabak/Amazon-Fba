@@ -19,12 +19,61 @@ import { useAuth } from '../contexts/AuthContext';
 import WelcomeModal from '../components/WelcomeModal';
 
 const Dashboard: React.FC = () => {
-  const { shipments, dashboardStats, loadAllData } = useSupabaseStore();
+  const { products, shipments, dashboardStats, loadAllData } = useSupabaseStore();
   const { user, profile } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   
   const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
   const recentShipments = shipments.slice(0, 5);
+
+  // Enhanced Stats Calculations
+  const enhancedStats = useMemo(() => {
+    // Total product value (all product costs combined)
+    const totalProductValue = products.reduce((sum, p) => {
+      const productCost = p.product_cost || 0;
+      return sum + productCost;
+    }, 0);
+
+    // Average product cost
+    const avgProductCost = products.length > 0 
+      ? products.reduce((sum, p) => sum + (p.product_cost || 0), 0) / products.length 
+      : 0;
+
+    // Active shipments (status not delivered)
+    const activeShipments = shipments.filter(s => 
+      s.status && !['delivered', 'completed', 'cancelled'].includes(s.status.toLowerCase())
+    ).length;
+
+    // Average shipping cost
+    const avgShippingCost = shipments.length > 0
+      ? shipments.reduce((sum, s) => sum + (s.total_shipping_cost || 0), 0) / shipments.length
+      : 0;
+
+    // This month's shipments
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const thisMonthShipments = shipments.filter(s => {
+      const shipmentDate = new Date(s.shipment_date);
+      return shipmentDate.getMonth() === currentMonth && shipmentDate.getFullYear() === currentYear;
+    }).length;
+
+    // Last 30 days shipments (trend)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const last30DaysShipments = shipments.filter(s => {
+      const shipmentDate = new Date(s.shipment_date);
+      return shipmentDate >= thirtyDaysAgo;
+    }).length;
+
+    return {
+      totalProductValue,
+      avgProductCost,
+      activeShipments,
+      avgShippingCost,
+      thisMonthShipments,
+      last30DaysShipments
+    };
+  }, [products, shipments]);
 
   // Load all data on component mount
   React.useEffect(() => {
@@ -140,8 +189,9 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 fade-in">
+      {/* Stats Grid - Enhanced */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 fade-in">
+        {/* Row 1 - Primary Metrics */}
         <StatCard
           title="Toplam Ürün"
           value={stats.total_products}
@@ -150,25 +200,55 @@ const Dashboard: React.FC = () => {
           bgColor="bg-blue-50"
         />
         <StatCard
-          title="Toplam Sevkiyat"
-          value={stats.total_shipments}
-          emoji="🚚"
+          title="Ürün Değeri"
+          value={`$${enhancedStats.totalProductValue.toFixed(2)}`}
+          emoji="💎"
+          color="text-indigo-600"
+          bgColor="bg-indigo-50"
+        />
+        <StatCard
+          title="Ortalama Maliyet"
+          value={`$${enhancedStats.avgProductCost.toFixed(2)}`}
+          emoji="💵"
           color="text-green-600"
           bgColor="bg-green-50"
         />
         <StatCard
-          title="Sevk Edilen Adet"
-          value={stats.total_shipped_quantity}
-          emoji="📈"
+          title="Aktif Sevkiyat"
+          value={enhancedStats.activeShipments}
+          emoji="🚀"
           color="text-purple-600"
           bgColor="bg-purple-50"
+        />
+
+        {/* Row 2 - Secondary Metrics */}
+        <StatCard
+          title="Toplam Sevkiyat"
+          value={stats.total_shipments}
+          emoji="🚚"
+          color="text-orange-600"
+          bgColor="bg-orange-50"
+        />
+        <StatCard
+          title="Bu Ay Sevkiyat"
+          value={enhancedStats.thisMonthShipments}
+          emoji="📅"
+          color="text-pink-600"
+          bgColor="bg-pink-50"
         />
         <StatCard
           title="Toplam Kargo Maliyeti"
           value={`$${stats.total_shipping_cost.toFixed(2)}`}
           emoji="💰"
-          color="text-orange-600"
-          bgColor="bg-orange-50"
+          color="text-yellow-600"
+          bgColor="bg-yellow-50"
+        />
+        <StatCard
+          title="Sevk Edilen Adet"
+          value={stats.total_shipped_quantity}
+          emoji="📈"
+          color="text-teal-600"
+          bgColor="bg-teal-50"
         />
       </div>
 
