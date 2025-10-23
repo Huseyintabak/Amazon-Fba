@@ -12,6 +12,7 @@ import UsageBanner from '../components/UsageBanner';
 import UpgradeModal from '../components/UpgradeModal';
 import BulkOperations from '../components/BulkOperations';
 import { validateProduct } from '../lib/validation';
+import { supabase } from '../lib/supabase';
 
 const Products: React.FC = () => {
   const { showToast } = useToast();
@@ -418,6 +419,15 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('manufacturer_code')}</span>
                   </button>
                 </th>
+                <th className="table-header-cell w-32">
+                  <button
+                    onClick={() => handleSort('supplier_name')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Tedarikçi</span>
+                    <span className="text-sm">{getSortIcon('supplier_name')}</span>
+                  </button>
+                </th>
                 <th className="table-header-cell w-28">
                   <button
                     onClick={() => handleSort('product_cost')}
@@ -505,6 +515,22 @@ const Products: React.FC = () => {
                       </code>
                     ) : (
                       <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="table-cell w-32">
+                    {product.supplier_name ? (
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 truncate">
+                          🏭 {product.supplier_name}
+                        </span>
+                        {product.supplier_country && (
+                          <span className="text-xs text-gray-500">
+                            {product.supplier_country}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">Belirlenmemiş</span>
                     )}
                   </td>
                   <td className="table-cell w-28">
@@ -745,6 +771,7 @@ interface ProductModalProps {
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave }) => {
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: product?.name || '',
     asin: product?.asin || '',
@@ -758,10 +785,31 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
     referral_fee_percent: product?.referral_fee_percent || 15,
     fulfillment_fee: product?.fulfillment_fee || 0,
     advertising_cost: product?.advertising_cost || 0,
+    // Supplier
+    supplier_id: product?.supplier_id || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showProfitCalculator, setShowProfitCalculator] = useState(false);
+
+  // Load suppliers on mount
+  React.useEffect(() => {
+    const loadSuppliers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('id, name, company_name, country')
+          .eq('is_active', true)
+          .order('name');
+        
+        if (error) throw error;
+        setSuppliers(data || []);
+      } catch (error) {
+        console.error('Error loading suppliers:', error);
+      }
+    };
+    loadSuppliers();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -890,6 +938,30 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
                 placeholder="0.00"
               />
             </div>
+          </div>
+
+          {/* Supplier Selection */}
+          <div>
+            <label className="label">🏭 Tedarikçi</label>
+            <select
+              value={formData.supplier_id}
+              onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+              className="input-field"
+            >
+              <option value="">Tedarikçi Seçiniz</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                  {supplier.company_name ? ` (${supplier.company_name})` : ''}
+                  {supplier.country ? ` - ${supplier.country}` : ''}
+                </option>
+              ))}
+            </select>
+            {suppliers.length === 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Henüz tedarikçi yok. <a href="/suppliers" className="text-blue-600 hover:underline">Tedarikçi ekle</a>
+              </p>
+            )}
           </div>
 
           {/* Profit Calculator Toggle */}

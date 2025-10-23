@@ -38,10 +38,10 @@ const getUserId = async (): Promise<string> => {
 // =====================================================
 
 export const productsApi = {
-  // Get all products (RLS automatically filters by user_id)
+  // Get all products with supplier info (RLS automatically filters by user_id)
   async getAll(): Promise<Product[]> {
-    const { data, error } = await supabaseTyped
-      .from('products')
+    const { data, error } = await supabase
+      .from('products_with_supplier')
       .select('*')
       .order('created_at', { ascending: false});
 

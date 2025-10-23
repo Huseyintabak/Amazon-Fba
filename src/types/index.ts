@@ -15,6 +15,11 @@ export interface Product {
   advertising_cost?: number;
   estimated_profit?: number;
   profit_margin?: number;
+  // Supplier link
+  supplier_id?: string;
+  supplier_name?: string;
+  supplier_company?: string;
+  supplier_country?: string;
   created_at: string;
   updated_at?: string;
 }
