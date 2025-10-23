@@ -26,19 +26,26 @@ Bu doküman, Amazon FBA Tracker SaaS ürünü için planlanan premium özellikle
   - Net kar hesaplama
   - Kar marjı (%)
   
-- [ ] **ROI Tracking**
+- [x] **ROI Tracking** ✅ TAMAMLANDI
   - Yatırım getirisi hesaplama
   - Ürün başına ROI
   - Toplam portföy ROI
+  - Database views (roi_performance)
+  - Automatic ROI calculation triggers
   
-- [ ] **Cost Breakdown Charts**
-  - Maliyet dağılımı (pie chart)
+- [x] **Cost Breakdown Charts** ✅ TAMAMLANDI
+  - Maliyet dağılımı (stacked bar chart)
   - Ürün vs. Kargo vs. FBA karşılaştırması
+  - Yüzdelik breakdown
+  - Top 10 ürün cost analysis
   
-- [ ] **Profit/Loss Statement**
-  - Aylık P&L tablosu
-  - Yıllık özet
-  - Kategori bazlı analiz
+- [x] **Profit/Loss Statement** ✅ TAMAMLANDI
+  - Reports sayfasında tab-based interface
+  - ROI Performance Table
+  - Cost Breakdown Table
+  - 6 KPI summary cards
+  - Interactive Recharts (Line, Bar, Pie)
+  - Real-time data from Supabase views
 
 #### **Teknik Gereksinimler:**
 ```sql

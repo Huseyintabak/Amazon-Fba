@@ -14,6 +14,11 @@ export interface Product {
   advertising_cost?: number;
   estimated_profit?: number;
   profit_margin?: number;
+  // ROI Tracking fields
+  initial_investment?: number;
+  units_sold?: number;
+  revenue_generated?: number;
+  roi_percentage?: number;
   // Supplier link
   supplier_id?: string;
   supplier_name?: string;
@@ -21,6 +26,51 @@ export interface Product {
   supplier_country?: string;
   created_at: string;
   updated_at?: string;
+}
+
+// ROI & P/L Types
+export interface ProfitLossSummary {
+  user_id: string;
+  month: string;
+  total_products: number;
+  total_investment: number;
+  total_revenue: number;
+  cost_of_goods_sold: number;
+  shipping_costs: number;
+  gross_profit: number;
+  net_profit: number;
+  profit_margin_percentage: number;
+}
+
+export interface CostBreakdown {
+  user_id: string;
+  product_id: string;
+  product_name: string;
+  product_cost: number;
+  fulfillment_fee: number;
+  advertising_cost: number;
+  referral_fee: number;
+  total_cost: number;
+  estimated_profit: number;
+  profit_margin: number;
+  product_cost_percentage: number;
+  fulfillment_cost_percentage: number;
+  advertising_cost_percentage: number;
+  referral_fee_percentage: number;
+}
+
+export interface ROIPerformance {
+  user_id: string;
+  product_id: string;
+  product_name: string;
+  initial_investment: number;
+  units_sold: number;
+  revenue_generated: number;
+  total_costs: number;
+  net_profit: number;
+  roi_percentage: number;
+  supplier_name?: string;
+  supplier_country?: string;
 }
 
 export interface ProfitCalculation {
