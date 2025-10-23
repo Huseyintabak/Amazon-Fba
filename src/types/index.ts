@@ -5,7 +5,6 @@ export interface Product {
   asin: string;
   merchant_sku: string;
   manufacturer_code?: string;
-  manufacturer?: string;
   amazon_barcode?: string;
   product_cost?: number;
   // Profit Calculator fields

@@ -759,7 +759,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
     asin: product?.asin || '',
     merchant_sku: product?.merchant_sku || '',
     manufacturer_code: product?.manufacturer_code || '',
-    manufacturer: product?.manufacturer || '',
     amazon_barcode: product?.amazon_barcode || '',
     product_cost: product?.product_cost || 0,
     // Profit Calculator fields
