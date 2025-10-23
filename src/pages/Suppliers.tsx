@@ -259,7 +259,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ supplier, onClose, onSucc
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="modal-content max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b">
           <h3 className="text-xl font-bold text-gray-900">
             {supplier ? '✏️ Tedarikçi Düzenle' : '➕ Yeni Tedarikçi'}
