@@ -8,13 +8,17 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
+  LineChart,
   Line,
+  AreaChart,
+  Area,
   PieChart,
   Pie,
   Cell
 } from 'recharts';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import WelcomeModal from '../components/WelcomeModal';
 
 const Dashboard: React.FC = () => {
@@ -22,22 +26,43 @@ const Dashboard: React.FC = () => {
   const { user, profile } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
+  const [roiSummary, setROISummary] = useState({ totalProfit: 0, avgROI: 0, topProduct: '' });
   
   const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
+
+  // Load ROI summary
+  useEffect(() => {
+    const loadROISummary = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('roi_performance')
+          .select('*')
+          .order('roi_percentage', { ascending: false })
+          .limit(1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const { data: allData } = await supabase.from('roi_performance').select('net_profit, roi_percentage');
+          const totalProfit = allData?.reduce((sum, item) => sum + (item.net_profit || 0), 0) || 0;
+          const avgROI = allData && allData.length > 0 
+            ? allData.reduce((sum, item) => sum + (item.roi_percentage || 0), 0) / allData.length 
+            : 0;
+          
+          setROISummary({
+            totalProfit,
+            avgROI,
+            topProduct: data[0].product_name || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading ROI summary:', error);
+      }
+    };
+    
+    loadROISummary();
+  }, []);
   
-  // Recent items for activity feed
-  const recentProducts = useMemo(() => {
-    return [...products]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5);
-  }, [products]);
-
-  const recentShipments = useMemo(() => {
-    return [...shipments]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5);
-  }, [shipments]);
-
   // Filter shipments by date range
   const filteredShipments = useMemo(() => {
     if (dateRange === 'all') return shipments;
@@ -55,76 +80,73 @@ const Dashboard: React.FC = () => {
     return shipments.filter(s => new Date(s.shipment_date) >= cutoffDate);
   }, [shipments, dateRange]);
 
-  // Enhanced Stats Calculations
+  // Enhanced Stats with Trends
   const enhancedStats = useMemo(() => {
-    // Total product value (all product costs combined)
-    const totalProductValue = products.reduce((sum, p) => {
-      const productCost = p.product_cost || 0;
-      return sum + productCost;
-    }, 0);
-
-    // Average product cost
-    const avgProductCost = products.length > 0 
-      ? products.reduce((sum, p) => sum + (p.product_cost || 0), 0) / products.length 
+    const totalProductValue = products.reduce((sum, p) => sum + (p.product_cost || 0), 0);
+    const avgProductCost = products.length > 0 ? totalProductValue / products.length : 0;
+    
+    // Products with profit data
+    const profitableProducts = products.filter(p => (p.estimated_profit || 0) > 0).length;
+    const avgProfit = products.length > 0 
+      ? products.reduce((sum, p) => sum + (p.estimated_profit || 0), 0) / products.length 
       : 0;
 
-    // Active shipments (status not delivered)
-    const activeShipments = shipments.filter(s => 
-      s.status && !['delivered', 'completed', 'cancelled'].includes(s.status.toLowerCase())
-    ).length;
-
-    // Average shipping cost
-    const avgShippingCost = shipments.length > 0
-      ? shipments.reduce((sum, s) => sum + (s.total_shipping_cost || 0), 0) / shipments.length
-      : 0;
-
-    // This month's shipments
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const thisMonthShipments = shipments.filter(s => {
-      const shipmentDate = new Date(s.shipment_date);
-      return shipmentDate.getMonth() === currentMonth && shipmentDate.getFullYear() === currentYear;
-    }).length;
-
-    // Last 30 days shipments (trend)
+    // Last 30 days comparison
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const last30DaysShipments = shipments.filter(s => {
-      const shipmentDate = new Date(s.shipment_date);
-      return shipmentDate >= thirtyDaysAgo;
+    const last30DaysProducts = products.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length;
+    const last30DaysShipments = shipments.filter(s => new Date(s.shipment_date) >= thirtyDaysAgo).length;
+
+    // Previous 30 days
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const prev30DaysProducts = products.filter(p => {
+      const date = new Date(p.created_at);
+      return date >= sixtyDaysAgo && date < thirtyDaysAgo;
     }).length;
+    const prev30DaysShipments = shipments.filter(s => {
+      const date = new Date(s.shipment_date);
+      return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+    }).length;
+
+    // Calculate trends
+    const productTrend = prev30DaysProducts > 0 
+      ? ((last30DaysProducts - prev30DaysProducts) / prev30DaysProducts) * 100 
+      : (last30DaysProducts > 0 ? 100 : 0);
+    const shipmentTrend = prev30DaysShipments > 0 
+      ? ((last30DaysShipments - prev30DaysShipments) / prev30DaysShipments) * 100 
+      : (last30DaysShipments > 0 ? 100 : 0);
 
     return {
       totalProductValue,
       avgProductCost,
-      activeShipments,
-      avgShippingCost,
-      thisMonthShipments,
+      profitableProducts,
+      avgProfit,
+      productTrend,
+      shipmentTrend,
       last30DaysShipments
     };
   }, [products, shipments]);
 
   // Load all data on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     loadAllData();
   }, [loadAllData]);
 
   // Show welcome modal for new users
   useEffect(() => {
-    // Check if user just signed up (profile created less than 1 minute ago)
     if (profile && profile.created_at) {
       const createdAt = new Date(profile.created_at);
       const now = new Date();
       const diffMinutes = (now.getTime() - createdAt.getTime()) / 1000 / 60;
       
-      // Show welcome if profile is less than 5 minutes old (new user)
       if (diffMinutes < 5) {
         setShowWelcome(true);
       }
     }
   }, [profile]);
 
-  // Monthly data for charts - Enhanced
+  // Monthly data for charts (last 6 months)
   const monthlyData = useMemo(() => {
     const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
                    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -136,18 +158,15 @@ const Dashboard: React.FC = () => {
       });
       
       const totalCost = monthShipments.reduce((sum, s) => sum + s.total_shipping_cost, 0);
-      const avgCost = monthShipments.length > 0 ? totalCost / monthShipments.length : 0;
       
       return {
-        month,
-        shortMonth: month.substring(0, 3), // Kısa ay adları
+        month: month.substring(0, 3),
         shipments: monthShipments.length,
-        shipping_cost: totalCost,
-        avg_cost: avgCost
+        cost: totalCost,
       };
     });
     
-    // Only return last 6 months for better visualization
+    // Return last 6 months
     const currentMonth = new Date().getMonth();
     const last6Months = [];
     for (let i = 5; i >= 0; i--) {
@@ -158,54 +177,44 @@ const Dashboard: React.FC = () => {
     return last6Months;
   }, [filteredShipments]);
 
-  // Carrier distribution data
-  const carrierData = useMemo(() => {
-    const carriers = filteredShipments.reduce((acc, shipment) => {
-      const carrier = shipment.carrier_company;
-      if (!acc[carrier]) {
-        acc[carrier] = { count: 0, totalCost: 0 };
-      }
-      acc[carrier].count++;
-      acc[carrier].totalCost += shipment.total_shipping_cost;
-      return acc;
-    }, {} as Record<string, { count: number; totalCost: number }>);
+  // Top products by profit
+  const topProducts = useMemo(() => {
+    return [...products]
+      .filter(p => (p.estimated_profit || 0) > 0)
+      .sort((a, b) => (b.estimated_profit || 0) - (a.estimated_profit || 0))
+      .slice(0, 5);
+  }, [products]);
 
-    const totalShipments = filteredShipments.length;
-
-    return Object.entries(carriers).map(([carrier, data]) => ({
-      name: carrier,
-      count: data.count,
-      percentage: totalShipments > 0 ? (data.count / totalShipments) * 100 : 0,
-      totalCost: data.totalCost
-    }));
-  }, [filteredShipments]);
-
-  // Color palette for charts
+  // Color palette
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   const StatCard: React.FC<{
     title: string;
     value: string | number;
-    emoji: string;
+    icon: string;
+    trend?: number;
+    subtitle?: string;
     color: string;
-    bgColor: string;
-  }> = ({ title, value, emoji, color, bgColor }) => (
-    <div className="card hover-lift">
-      <div className="flex items-center">
-        <div className="flex-shrink-0">
-          <div className={`w-12 h-12 rounded-lg ${bgColor} flex items-center justify-center`}>
-            <span className={`text-2xl ${color}`}>{emoji}</span>
-          </div>
+  }> = ({ title, value, icon, trend, subtitle, color }) => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+          <p className={`text-3xl font-bold ${color} mb-2`}>{value}</p>
+          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+          {trend !== undefined && (
+            <div className={`inline-flex items-center text-xs font-semibold mt-2 px-2 py-1 rounded-full ${
+              trend >= 0 
+                ? 'bg-green-50 text-green-700' 
+                : 'bg-red-50 text-red-700'
+            }`}>
+              <span className="mr-1">{trend >= 0 ? '↑' : '↓'}</span>
+              {Math.abs(trend).toFixed(1)}% son 30 gün
+            </div>
+          )}
         </div>
-        <div className="ml-4 w-0 flex-1">
-          <dl>
-            <dt className="text-sm font-medium text-gray-500 truncate">
-              {title}
-            </dt>
-            <dd className="text-2xl font-bold text-gray-900">
-              {value}
-            </dd>
-          </dl>
+        <div className={`w-14 h-14 rounded-xl ${color.replace('text-', 'bg-').replace('600', '50')} flex items-center justify-center`}>
+          <span className="text-3xl">{icon}</span>
         </div>
       </div>
     </div>
@@ -213,443 +222,278 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      {/* Welcome Modal for new users */}
       <WelcomeModal
         isOpen={showWelcome}
         onClose={() => setShowWelcome(false)}
         userName={user?.email}
       />
 
-      <div className="space-y-8">
-        {/* Header with Date Filter */}
-        <div className="slide-in flex items-center justify-between">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Amazon FBA sevkiyat takip sistemi genel bakış
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Dashboard</h1>
+            <p className="text-gray-600">Hoş geldiniz! İşte işletmenizin özeti.</p>
           </div>
-          <div className="flex items-center space-x-3">
-            {/* Date Range Filter */}
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            >
-              <option value="7days">📅 Son 7 Gün</option>
-              <option value="30days">📅 Son 30 Gün</option>
-              <option value="90days">📅 Son 90 Gün</option>
-              <option value="all">📅 Tüm Zamanlar</option>
-            </select>
-
-            {/* Export Button */}
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all transform hover:scale-105"
-            >
-              <span className="mr-2">📥</span>
-              Export
-            </button>
-          </div>
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          >
+            <option value="7days">Son 7 Gün</option>
+            <option value="30days">Son 30 Gün</option>
+            <option value="90days">Son 90 Gün</option>
+            <option value="all">Tüm Zamanlar</option>
+          </select>
         </div>
 
-      {/* Stats Grid - Enhanced */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 fade-in">
-        {/* Row 1 - Primary Metrics */}
-        <StatCard
-          title="Toplam Ürün"
-          value={stats.total_products}
-          emoji="📦"
-          color="text-blue-600"
-          bgColor="bg-blue-50"
-        />
-        <StatCard
-          title="Ürün Değeri"
-          value={`$${enhancedStats.totalProductValue.toFixed(2)}`}
-          emoji="💎"
-          color="text-indigo-600"
-          bgColor="bg-indigo-50"
-        />
-        <StatCard
-          title="Ortalama Maliyet"
-          value={`$${enhancedStats.avgProductCost.toFixed(2)}`}
-          emoji="💵"
-          color="text-green-600"
-          bgColor="bg-green-50"
-        />
-        <StatCard
-          title="Aktif Sevkiyat"
-          value={enhancedStats.activeShipments}
-          emoji="🚀"
-          color="text-purple-600"
-          bgColor="bg-purple-50"
-        />
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Toplam Ürün"
+            value={stats.total_products}
+            icon="📦"
+            trend={enhancedStats.productTrend}
+            color="text-blue-600"
+          />
+          <StatCard
+            title="Toplam Sevkiyat"
+            value={stats.total_shipments}
+            icon="🚚"
+            trend={enhancedStats.shipmentTrend}
+            color="text-green-600"
+          />
+          <StatCard
+            title="Net Kar"
+            value={`$${roiSummary.totalProfit.toFixed(2)}`}
+            icon="💰"
+            subtitle="Tüm ürünler"
+            color="text-emerald-600"
+          />
+          <StatCard
+            title="Ortalama ROI"
+            value={`${roiSummary.avgROI.toFixed(1)}%`}
+            icon="📈"
+            subtitle={roiSummary.topProduct ? `En iyi: ${roiSummary.topProduct.substring(0, 20)}...` : 'ROI verisi yok'}
+            color="text-purple-600"
+          />
+        </div>
 
-        {/* Row 2 - Secondary Metrics */}
-        <StatCard
-          title="Toplam Sevkiyat"
-          value={stats.total_shipments}
-          emoji="🚚"
-          color="text-orange-600"
-          bgColor="bg-orange-50"
-        />
-        <StatCard
-          title="Bu Ay Sevkiyat"
-          value={enhancedStats.thisMonthShipments}
-          emoji="📅"
-          color="text-pink-600"
-          bgColor="bg-pink-50"
-        />
-        <StatCard
-          title="Toplam Kargo Maliyeti"
-          value={`$${stats.total_shipping_cost.toFixed(2)}`}
-          emoji="💰"
-          color="text-yellow-600"
-          bgColor="bg-yellow-50"
-        />
-        <StatCard
-          title="Sevk Edilen Adet"
-          value={stats.total_shipped_quantity}
-          emoji="📈"
-          color="text-teal-600"
-          bgColor="bg-teal-50"
-        />
-      </div>
-
-      {/* Recent Activity Section */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Recent Products */}
-        <div className="card">
-          <div className="border-b border-gray-200 pb-4 mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Son Eklenen Ürünler</h3>
-              <p className="text-sm text-gray-500 mt-1">En son eklediğiniz ürünler</p>
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Performance */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-gray-900">Aylık Performans</h3>
+              <p className="text-sm text-gray-500 mt-1">Sevkiyat ve maliyet trendi</p>
             </div>
-            <Link to="/products" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              Tümü →
-            </Link>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyData}>
+                  <defs>
+                    <linearGradient id="colorShipments" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#FFF', 
+                      border: '1px solid #E5E7EB', 
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    formatter={(value: any, name: string) => {
+                      if (name === 'cost') return [`$${value.toFixed(2)}`, 'Toplam Maliyet'];
+                      if (name === 'shipments') return [value, 'Sevkiyat'];
+                      return [value, name];
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="shipments" 
+                    stroke="#3B82F6" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorShipments)" 
+                    name="Sevkiyat"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="cost" 
+                    stroke="#10B981" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorCost)" 
+                    name="Maliyet"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="space-y-3">
-            {recentProducts.length > 0 ? (
-              recentProducts.map((product) => (
-                <Link
-                  key={product.id}
-                  to={`/products/${product.id}`}
-                  className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
+
+          {/* Top Products by Profit */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-gray-900">En Karlı Ürünler</h3>
+              <p className="text-sm text-gray-500 mt-1">Top 5 yüksek kar marjlı ürünler</p>
+            </div>
+            {topProducts.length > 0 ? (
+              <div className="space-y-3">
+                {topProducts.map((product, index) => (
+                  <Link
+                    key={product.id}
+                    to={`/products/${product.id}`}
+                    className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-gray-50 to-white hover:from-blue-50 hover:to-white border border-gray-100 hover:border-blue-200 transition-all duration-200 group"
+                  >
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-lg">📦</span>
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                        index === 1 ? 'bg-gray-100 text-gray-700' :
+                        index === 2 ? 'bg-orange-100 text-orange-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>
+                        {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
                           {product.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          ASIN: {product.asin}
+                          Marj: {product.profit_margin?.toFixed(1)}%
                         </p>
                       </div>
                     </div>
                     <div className="text-right ml-4">
-                      {product.product_cost && (
-                        <p className="text-sm font-semibold text-gray-900">
-                          ${product.product_cost.toFixed(2)}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-400">
-                        {new Date(product.created_at).toLocaleDateString('tr-TR', { 
-                          day: 'numeric', 
-                          month: 'short' 
-                        })}
+                      <p className="text-sm font-bold text-green-600">
+                        ${product.estimated_profit?.toFixed(2)}
                       </p>
+                      <p className="text-xs text-gray-400">kar</p>
                     </div>
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                ))}
+              </div>
             ) : (
-              <div className="py-12 text-center text-gray-400">
-                <span className="text-3xl block mb-2">📦</span>
-                <p className="text-sm">Henüz ürün eklemediniz</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Shipments */}
-        <div className="card">
-          <div className="border-b border-gray-200 pb-4 mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Son Sevkiyatlar</h3>
-              <p className="text-sm text-gray-500 mt-1">En son oluşturduğunuz sevkiyatlar</p>
-            </div>
-            <Link to="/shipments" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              Tümü →
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {recentShipments.length > 0 ? (
-              recentShipments.map((shipment) => (
-                <Link
-                  key={shipment.id}
-                  to={`/shipments/${shipment.id}`}
-                  className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <span className="text-lg">🚚</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {shipment.fba_shipment_id}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {shipment.carrier_company}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right ml-4">
-                      <p className="text-sm font-semibold text-gray-900">
-                        ${shipment.total_shipping_cost.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(shipment.shipment_date).toLocaleDateString('tr-TR', { 
-                          day: 'numeric', 
-                          month: 'short' 
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      shipment.status === 'completed' 
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {shipment.status === 'completed' ? '✓ Tamamlandı' : '⏳ Taslak'}
-                    </span>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div className="py-12 text-center text-gray-400">
-                <span className="text-3xl block mb-2">🚚</span>
-                <p className="text-sm">Henüz sevkiyat oluşturmadınız</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="card">
-          <div className="border-b border-gray-200 pb-5">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Hızlı İşlemler
-            </h3>
-          </div>
-          <div className="space-y-4">
-            <Link
-              to="/products"
-              className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 block"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                    <span className="text-2xl">📦</span>
-                  </div>
-                </div>
-                <div className="flex-1 text-left">
-                  <h4 className="text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                    Yeni Ürün Ekle
-                  </h4>
-                  <p className="text-sm text-gray-500">
-                    Sisteme yeni ürün kaydı oluşturun
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <span className="text-gray-400 group-hover:text-blue-600 transition-colors">➕</span>
-                </div>
-              </div>
-            </Link>
-
-            <Link
-              to="/shipments/new"
-              className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 block"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center group-hover:bg-green-100 transition-colors">
-                    <span className="text-2xl">🚚</span>
-                  </div>
-                </div>
-                <div className="flex-1 text-left">
-                  <h4 className="text-lg font-medium text-gray-900 group-hover:text-green-600 transition-colors">
-                    Yeni Sevkiyat
-                  </h4>
-                  <p className="text-sm text-gray-500">
-                    Yeni sevkiyat oluşturun ve ürün ekleyin
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <span className="text-gray-400 group-hover:text-green-600 transition-colors">➕</span>
-                </div>
-              </div>
-            </Link>
-
-            <Link
-              to="/reports"
-              className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 block"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-                    <span className="text-2xl">📊</span>
-                  </div>
-                </div>
-                <div className="flex-1 text-left">
-                  <h4 className="text-lg font-medium text-gray-900 group-hover:text-purple-600 transition-colors">
-                    Raporları Görüntüle
-                  </h4>
-                  <p className="text-sm text-gray-500">
-                    Detaylı raporları ve analizleri inceleyin
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <span className="text-gray-400 group-hover:text-purple-600 transition-colors">📊</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Section - Enhanced */}
-      <div className="space-y-8">
-        {/* Top Row - Dual Chart (Shipments & Cost Combined) */}
-        <div className="card">
-          <div className="border-b border-gray-200 pb-4 mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Aylık Performans Özeti</h3>
-            <p className="text-sm text-gray-500 mt-1">Son 6 ayın sevkiyat ve maliyet trendi</p>
-          </div>
-          <div className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis 
-                  dataKey="shortMonth" 
-                  tick={{ fill: '#6B7280' }}
-                  axisLine={{ stroke: '#9CA3AF' }}
-                />
-                <YAxis 
-                  yAxisId="left"
-                  tick={{ fill: '#6B7280' }}
-                  axisLine={{ stroke: '#9CA3AF' }}
-                  label={{ value: 'Sevkiyat Sayısı', angle: -90, position: 'insideLeft', fill: '#6B7280' }}
-                />
-                <YAxis 
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fill: '#6B7280' }}
-                  axisLine={{ stroke: '#9CA3AF' }}
-                  label={{ value: 'Maliyet ($)', angle: 90, position: 'insideRight', fill: '#6B7280' }}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  formatter={(value: any, name: string) => {
-                    if (name === 'shipping_cost') return [`$${value.toFixed(2)}`, 'Toplam Maliyet'];
-                    if (name === 'shipments') return [value, 'Sevkiyat Sayısı'];
-                    if (name === 'quantity') return [value, 'Toplam Adet'];
-                    return [value, name];
-                  }}
-                />
-                <Bar yAxisId="left" dataKey="shipments" fill="#3B82F6" name="Sevkiyat Sayısı" radius={[8, 8, 0, 0]} />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="shipping_cost" 
-                  stroke="#10B981" 
-                  strokeWidth={3}
-                  name="Toplam Maliyet"
-                  dot={{ fill: '#10B981', r: 5 }}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Bottom Row - Carrier Distribution */}
-        <div className="grid grid-cols-1 gap-8">
-          {/* Carrier Distribution - Combined */}
-          <div className="card">
-            <div className="border-b border-gray-200 pb-4 mb-6">
-              <h3 className="text-lg font-bold text-gray-900">Kargo Firması Performansı</h3>
-              <p className="text-sm text-gray-500 mt-1">Firma bazlı dağılım ve toplam maliyetler</p>
-            </div>
-            
-            {carrierData.length > 0 ? (
-              <>
-                {/* Pie Chart */}
-                <div className="h-64 mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={carrierData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percentage }) => `${name} (${percentage.toFixed(0)}%)`}
-                        outerRadius={90}
-                        fill="#8884d8"
-                        dataKey="count"
-                      >
-                        {carrierData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                        formatter={(value: any, _name: string, props: any) => [
-                          `${value} sevkiyat - $${props.payload.totalCost.toFixed(2)}`,
-                          props.payload.name
-                        ]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {/* Performance Table */}
-                <div className="space-y-2">
-                  {carrierData.map((carrier, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                        ></div>
-                        <span className="font-medium text-gray-900">{carrier.name}</span>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm">
-                        <span className="text-gray-600">{carrier.count} sevkiyat</span>
-                        <span className="text-gray-500">{carrier.percentage.toFixed(1)}%</span>
-                        <span className="font-bold text-gray-900">${carrier.totalCost.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="h-80 flex items-center justify-center text-gray-400">
+              <div className="h-64 flex items-center justify-center text-gray-400">
                 <div className="text-center">
-                  <span className="text-4xl block mb-2">📦</span>
-                  <p>Henüz kargo verisi yok</p>
+                  <span className="text-5xl block mb-3">📊</span>
+                  <p className="text-sm">Henüz kar verisi yok</p>
+                  <p className="text-xs mt-1">Ürünlerinize maliyet bilgisi ekleyin</p>
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Quick Actions & Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Quick Actions */}
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Hızlı İşlemler</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link
+                to="/products"
+                className="group relative bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 p-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-3xl">📦</span>
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-1">Yeni Ürün</h4>
+                  <p className="text-xs text-gray-600">Ürün ekle</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/shipments/new"
+                className="group relative bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 p-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-3xl">🚚</span>
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-1">Yeni Sevkiyat</h4>
+                  <p className="text-xs text-gray-600">Sevkiyat oluştur</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/reports"
+                className="group relative bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 p-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-3xl">📊</span>
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-1">Raporlar</h4>
+                  <p className="text-xs text-gray-600">Analiz görüntüle</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Secondary Stats */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Diğer Metrikler</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">💎</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Toplam Değer</p>
+                    <p className="text-sm font-bold text-gray-900">${enhancedStats.totalProductValue.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">✓</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Karlı Ürünler</p>
+                    <p className="text-sm font-bold text-gray-900">{enhancedStats.profitableProducts}/{stats.total_products}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">📈</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Ort. Kar</p>
+                    <p className="text-sm font-bold text-gray-900">${enhancedStats.avgProfit.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">💰</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Kargo Maliyeti</p>
+                    <p className="text-sm font-bold text-gray-900">${stats.total_shipping_cost.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
     </>
   );
 };
