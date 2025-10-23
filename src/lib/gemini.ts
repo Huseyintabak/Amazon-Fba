@@ -6,8 +6,8 @@ const GEMINI_API_KEY = 'AIzaSyBamRJ6VFw9YZ3x36RyTW8NgpMp8_uzXTQ';
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// Get the Gemini Pro model
-export const getGeminiModel = (modelName: 'gemini-pro' | 'gemini-pro-vision' = 'gemini-pro') => {
+// Get the Gemini model (using latest stable models)
+export const getGeminiModel = (modelName: 'gemini-1.5-flash' | 'gemini-1.5-pro' = 'gemini-1.5-flash') => {
   return genAI.getGenerativeModel({ model: modelName });
 };
 
