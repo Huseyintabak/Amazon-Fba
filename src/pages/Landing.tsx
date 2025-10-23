@@ -147,19 +147,13 @@ const Landing: React.FC = () => {
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 animate-fade-in-up animation-delay-200">
+            <div className="flex justify-center mb-8 animate-fade-in-up animation-delay-200">
               <Link
                 to="/signup"
-                className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                className="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200"
               >
                 <span className="relative z-10">🚀 Ücretsiz Başlayın</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-              </Link>
-              <Link
-                to="/pricing"
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:border-gray-400 hover:shadow-md transition-all duration-200"
-              >
-                📊 Fiyatları Görün
               </Link>
             </div>
 
