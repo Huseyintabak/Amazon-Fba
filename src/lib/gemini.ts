@@ -1,12 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { mockDashboardInsights, mockProductAnalysis, mockPriceOptimization } from './geminiMock';
+import * as OpenAIService from './openai';
 
 // Gemini API Configuration
 const GEMINI_API_KEY = 'AIzaSyBamRJ6VFw9YZ3x36RyTW8NgpMp8_uzXTQ';
 
-// Feature flag for using mock data (set to true if API has issues)
-// Currently enabled due to Gemini API model availability issues
-const USE_MOCK_DATA = true;
+// Feature flags
+const USE_MOCK_DATA = false; // Disabled - using OpenAI now
+const USE_OPENAI = true; // Use OpenAI instead of Gemini
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -87,6 +88,11 @@ export const analyzeProductPerformance = async (product: {
   units_sold?: number;
   revenue_generated?: number;
 }): Promise<ProductAnalysis> => {
+  if (USE_OPENAI) {
+    console.log('Using OpenAI for product analysis');
+    return OpenAIService.analyzeProductPerformance(product);
+  }
+
   if (USE_MOCK_DATA) {
     return Promise.resolve(mockProductAnalysis);
   }
@@ -150,6 +156,11 @@ export const optimizePrice = async (product: {
   profit_margin?: number;
   units_sold?: number;
 }): Promise<PriceOptimization> => {
+  if (USE_OPENAI) {
+    console.log('Using OpenAI for price optimization');
+    return OpenAIService.optimizePrice(product);
+  }
+
   if (USE_MOCK_DATA) {
     return Promise.resolve(mockPriceOptimization);
   }
@@ -201,7 +212,13 @@ export const generateDashboardInsights = async (data: {
   topProducts: Array<{ name: string; profit: number }>;
   bottomProducts: Array<{ name: string; profit: number }>;
 }): Promise<DashboardInsight[]> => {
-  // Use mock data if flag is enabled or API fails
+  // Use OpenAI if enabled
+  if (USE_OPENAI) {
+    console.log('Using OpenAI for dashboard insights');
+    return OpenAIService.generateDashboardInsights(data);
+  }
+
+  // Use mock data if flag is enabled
   if (USE_MOCK_DATA) {
     console.log('Using mock dashboard insights');
     return Promise.resolve(mockDashboardInsights);
