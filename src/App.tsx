@@ -21,6 +21,8 @@ import Admin from './pages/Admin';
 import Suppliers from './pages/Suppliers';
 import AIHub from './pages/AIHub';
 import PurchaseOrders from './pages/PurchaseOrders';
+import NewPurchaseOrder from './pages/NewPurchaseOrder';
+import PurchaseOrderDetail from './pages/PurchaseOrderDetail';
 import { initGA, trackPageView } from './lib/analytics';
 
 // Wrapper component for ShipmentDetail to get params
@@ -260,6 +262,26 @@ function AppRoutes() {
                 <ProtectedRoute>
                   <Layout>
                     <PurchaseOrders />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/purchase-orders/new"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <NewPurchaseOrder />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/purchase-orders/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PurchaseOrderDetail />
                   </Layout>
                 </ProtectedRoute>
               }
