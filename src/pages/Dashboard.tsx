@@ -13,6 +13,7 @@ import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useAuth } from '../contexts/AuthContext';
 import WelcomeModal from '../components/WelcomeModal';
 import AIInsights from '../components/AIInsights';
+import AIChatAssistant from '../components/AIChatAssistant';
 
 const Dashboard: React.FC = () => {
   const { products, shipments, loadAllData } = useSupabaseStore();
@@ -513,6 +514,15 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Chat Assistant - Floating Button */}
+      <AIChatAssistant
+        products={filteredProducts}
+        shipments={filteredShipments}
+        totalRevenue={enhancedStats.totalRevenue}
+        totalProfit={roiSummary.totalProfit}
+        averageROI={roiSummary.avgROI}
+      />
     </>
   );
 };
