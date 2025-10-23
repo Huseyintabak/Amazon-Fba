@@ -19,7 +19,7 @@ Bu doküman, Amazon FBA Tracker SaaS ürünü için planlanan premium özellikle
 **Plan Kısıtı:** Pro
 
 #### **Özellikler:**
-- [ ] **Profit Calculator**
+- [x] **Profit Calculator** ✅ TAMAMLANDI
   - Ürün maliyeti
   - Kargo maliyeti
   - FBA ücretleri (referral fee, fulfillment fee)
@@ -67,13 +67,13 @@ ALTER TABLE shipments ADD COLUMN IF NOT EXISTS estimated_profit NUMERIC DEFAULT 
 **Plan Kısıtı:** Pro
 
 #### **Özellikler:**
-- [ ] **Bulk Product Edit**
+- [x] **Bulk Product Edit** ✅ TAMAMLANDI
   - Çoklu ürün seçimi (checkbox)
   - Toplu fiyat güncelleme
   - Toplu maliyet güncelleme
   - Toplu kategori değiştirme
   
-- [ ] **Bulk Delete**
+- [x] **Bulk Delete** ✅ TAMAMLANDI
   - Çoklu ürün silme
   - Confirmation dialog
   
@@ -224,13 +224,13 @@ CREATE TABLE notification_preferences (
 **Plan Kısıtı:** Pro
 
 #### **Özellikler:**
-- [ ] **Supplier Database**
+- [x] **Supplier Database** ✅ TAMAMLANDI
   - Tedarikçi listesi (CRUD)
   - İletişim bilgileri
   - Ödeme şartları
   - Not ve rating
   
-- [ ] **Purchase Orders**
+- [x] **Purchase Orders** ✅ SCHEMA HAZIR
   - Sipariş oluşturma
   - Sipariş durumu takibi
   - Ödeme takibi
