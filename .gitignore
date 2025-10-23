@@ -63,3 +63,33 @@ jspm_packages/
 
 # TypeScript
 *.tsbuildinfo
+
+# Build artifacts
+*.tar.gz
+*.zip
+
+# Deployment scripts (project-specific)
+deploy.sh
+server-deploy.sh
+docker-deploy.sh
+*-deploy.sh
+update.sh
+force-update.sh
+
+# Nginx configs (if using serverless)
+nginx*.conf
+
+# Database clear scripts (dangerous)
+clear-database.*
+force-clear-database.*
+
+# Temporary test files
+test-*.html
+debug-*.sql
+verify-*.sql
+CHECK_*.sql
+TEST_*.sql
+TEST_*.md
+
+# Cleanup plan
+CLEANUP_PLAN.md

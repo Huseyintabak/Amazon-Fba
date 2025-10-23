@@ -1,5 +1,6 @@
 export interface Product {
   id: string;
+  user_id?: string;
   name: string;
   asin: string;
   merchant_sku: string;
@@ -13,6 +14,7 @@ export interface Product {
 
 export interface Shipment {
   id: string;
+  user_id?: string;
   fba_shipment_id: string;
   shipment_date: string;
   carrier_company: string;

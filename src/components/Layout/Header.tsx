@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { signOut } from '../../lib/auth';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const Header: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const { showToast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
@@ -10,13 +16,18 @@ const Header: React.FC = () => {
     { name: 'Ürünler', href: '/products', icon: '📦' },
     { name: 'Sevkiyatlar', href: '/shipments', icon: '🚚' },
     { name: 'Raporlar', href: '/reports', icon: '📊' },
+    { name: 'Profil', href: '/profile', icon: '👤' },
+    ...(profile?.role === 'admin' ? [{ name: 'Admin', href: '/admin', icon: '👨‍💼' }] : []),
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    // Dispatch custom event to notify App component
-    window.dispatchEvent(new CustomEvent('authChange'));
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      showToast('Başarıyla çıkış yaptınız', 'success');
+      navigate('/login');
+    } catch (error) {
+      showToast('Çıkış yapılırken bir hata oluştu', 'error');
+    }
   };
 
   return (
@@ -59,6 +70,14 @@ const Header: React.FC = () => {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center space-x-4">
+            {user && (
+              <div className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600">
+                <span className="text-lg">👤</span>
+                <span className="hidden xl:inline truncate max-w-[150px]">
+                  {user.email}
+                </span>
+              </div>
+            )}
             <button
               onClick={handleLogout}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"

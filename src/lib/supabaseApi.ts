@@ -1,17 +1,49 @@
-import { supabaseTyped } from './supabase';
+import { supabase, supabaseTyped } from './supabase';
 import { Product, Shipment, ShipmentItem, DashboardStats } from '../types';
+
+// Helper to get current user ID from session
+const getUserId = async (): Promise<string> => {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  console.log('Session check:', {
+    hasError: !!error,
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id,
+    error
+  });
+  
+  if (error) {
+    console.error('Session error:', error);
+    throw new Error(`Authentication error: ${error.message}`);
+  }
+  
+  if (!session) {
+    throw new Error('No active session. Please log in again.');
+  }
+  
+  if (!session.user) {
+    throw new Error('No user in session. Please log in again.');
+  }
+  
+  if (!session.user.id) {
+    throw new Error('No user ID in session. Please log in again.');
+  }
+  
+  return session.user.id;
+};
 
 // =====================================================
 // PRODUCTS API
 // =====================================================
 
 export const productsApi = {
-  // Get all products
+  // Get all products (RLS automatically filters by user_id)
   async getAll(): Promise<Product[]> {
     const { data, error } = await supabaseTyped
       .from('products')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false});
 
     if (error) throw error;
     return data || [];
@@ -29,22 +61,31 @@ export const productsApi = {
     return data;
   },
 
-  // Create product
-  async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
-    const { data, error } = await supabaseTyped
-      .from('products')
-      .insert([product] as any)
-      .select()
-      .single();
+  // Create product using RPC function (bypasses session issues)
+  async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>): Promise<Product> {
+    const { data, error } = await supabase.rpc('create_product_with_user', {
+      p_name: product.name,
+      p_asin: product.asin,
+      p_merchant_sku: product.merchant_sku,
+      p_manufacturer_code: product.manufacturer_code || null,
+      p_manufacturer: product.manufacturer || null,
+      p_amazon_barcode: product.amazon_barcode || null,
+      p_product_cost: product.product_cost || 0
+    });
 
     if (error) {
       console.error('Supabase create product error:', error);
       if (error.code === '23505') {
         throw new Error(`Ürün zaten mevcut: ${error.details || 'Duplicate key error'}`);
       }
+      if (error.message && error.message.includes('limit reached')) {
+        throw new Error(error.message);
+      }
       throw error;
     }
-    return data;
+    
+    // RPC returns array, get first item
+    return data && data.length > 0 ? data[0] : data;
   },
 
   // Update product
@@ -112,14 +153,22 @@ export const shipmentsApi = {
   },
 
   // Create shipment
-  async create(shipment: Omit<Shipment, 'id' | 'created_at' | 'updated_at'>): Promise<Shipment> {
+  async create(shipment: Omit<Shipment, 'id' | 'created_at' | 'updated_at' | 'user_id'>): Promise<Shipment> {
+    // Get user_id from session and explicitly add it
+    const user_id = await getUserId();
+    
     const { data, error } = await supabaseTyped
       .from('shipments')
-      .insert([shipment] as any)
+      .insert([{ ...shipment, user_id }] as any)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.message && error.message.includes('shipment limit reached')) {
+        throw new Error(error.message);
+      }
+      throw error;
+    }
     return data;
   },
 
@@ -263,9 +312,23 @@ export const dashboardApi = {
     const { data, error } = await supabaseTyped
       .from('dashboard_stats')
       .select('*')
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (error) throw error;
+    
+    // If no data (new user with no products), return empty stats
+    if (!data) {
+      const user_id = await getUserId();
+      return {
+        user_id,
+        total_products: 0,
+        total_shipments: 0,
+        total_shipped_quantity: 0,
+        total_shipping_cost: 0,
+      } as DashboardStats;
+    }
+    
     return data;
   },
 

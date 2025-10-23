@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -14,9 +14,14 @@ import {
   Cell
 } from 'recharts';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useAuth } from '../contexts/AuthContext';
+import WelcomeModal from '../components/WelcomeModal';
 
 const Dashboard: React.FC = () => {
   const { shipments, dashboardStats, loadAllData } = useSupabaseStore();
+  const { user, profile } = useAuth();
+  const [showWelcome, setShowWelcome] = useState(false);
+  
   const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
   const recentShipments = shipments.slice(0, 5);
 
@@ -24,6 +29,21 @@ const Dashboard: React.FC = () => {
   React.useEffect(() => {
     loadAllData();
   }, [loadAllData]);
+
+  // Show welcome modal for new users
+  useEffect(() => {
+    // Check if user just signed up (profile created less than 1 minute ago)
+    if (profile && profile.created_at) {
+      const createdAt = new Date(profile.created_at);
+      const now = new Date();
+      const diffMinutes = (now.getTime() - createdAt.getTime()) / 1000 / 60;
+      
+      // Show welcome if profile is less than 5 minutes old (new user)
+      if (diffMinutes < 5) {
+        setShowWelcome(true);
+      }
+    }
+  }, [profile]);
 
   // Monthly data for charts
   const monthlyData = useMemo(() => {
@@ -102,11 +122,19 @@ const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="slide-in">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-2 text-sm text-gray-600">
+    <>
+      {/* Welcome Modal for new users */}
+      <WelcomeModal
+        isOpen={showWelcome}
+        onClose={() => setShowWelcome(false)}
+        userName={user?.email}
+      />
+
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="slide-in">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="mt-2 text-sm text-gray-600">
           Amazon FBA sevkiyat takip sistemi genel bakış
         </p>
       </div>
@@ -343,6 +371,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

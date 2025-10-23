@@ -1,16 +1,20 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useSubscription } from '../hooks/useSubscription';
 import { Product } from '../types';
 import { processCSVFile, getCSVTemplate } from '../lib/csvImport';
 import { searchProducts, SearchFilters } from '../lib/smartSearch';
 import AdvancedSearch from '../components/AdvancedSearch';
 import LoadingSpinner from '../components/LoadingSpinner';
+import UsageBanner from '../components/UsageBanner';
+import UpgradeModal from '../components/UpgradeModal';
 import { validateProduct } from '../lib/validation';
 
 const Products: React.FC = () => {
   const { showToast } = useToast();
   const { products, addProduct, updateProduct, deleteProduct, loadProducts } = useSupabaseStore();
+  const { canCreateProduct, hasFeature } = useSubscription();
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     searchTerm: '',
     manufacturer: 'all',
@@ -20,6 +24,8 @@ const Products: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<Product | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeLimitType, setUpgradeLimitType] = useState<'products' | 'shipments' | 'general'>('products');
   const [importResults, setImportResults] = useState<{
     success: boolean;
     products: any[];
@@ -144,11 +150,23 @@ const Products: React.FC = () => {
   };
 
   const handleAdd = () => {
+    // Check if user can create more products
+    if (!canCreateProduct()) {
+      setUpgradeLimitType('products');
+      setShowUpgradeModal(true);
+      return;
+    }
     setEditingProduct(null);
     setShowAddModal(true);
   };
 
   const handleImport = () => {
+    // CSV import is Pro feature
+    if (!hasFeature('csvExport')) {
+      setUpgradeLimitType('general');
+      setShowUpgradeModal(true);
+      return;
+    }
     setShowImportModal(true);
     setImportResults(null);
   };
@@ -240,6 +258,9 @@ const Products: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-full">
+      {/* Usage Banner */}
+      <UsageBanner />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -596,6 +617,14 @@ const Products: React.FC = () => {
         onDownloadTemplate={handleDownloadTemplate}
         results={importResults}
         fileInputRef={fileInputRef}
+      />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        limitType={upgradeLimitType}
+        feature={upgradeLimitType === 'general' ? 'CSV İçe/Dışa Aktarma' : undefined}
       />
     </div>
   );
