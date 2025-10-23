@@ -30,29 +30,6 @@ const Dashboard: React.FC = () => {
   
   const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
 
-  // Load ROI summary - recalculate when products change or date filter changes
-  useEffect(() => {
-    const calculateROISummary = () => {
-      // Calculate from filtered products
-      const totalProfit = filteredProducts.reduce((sum, p) => sum + (p.estimated_profit || 0), 0);
-      const avgROI = filteredProducts.length > 0
-        ? filteredProducts.reduce((sum, p) => sum + (p.roi_percentage || 0), 0) / filteredProducts.length
-        : 0;
-      
-      const topProduct = [...filteredProducts]
-        .filter(p => p.roi_percentage && p.roi_percentage > 0)
-        .sort((a, b) => (b.roi_percentage || 0) - (a.roi_percentage || 0))[0];
-      
-      setROISummary({
-        totalProfit,
-        avgROI,
-        topProduct: topProduct?.name || ''
-      });
-    };
-    
-    calculateROISummary();
-  }, [filteredProducts]);
-  
   // Filter shipments by date range
   const filteredShipments = useMemo(() => {
     if (dateRange === 'all') return shipments;
@@ -86,6 +63,29 @@ const Dashboard: React.FC = () => {
     
     return products.filter(p => new Date(p.created_at) >= cutoffDate);
   }, [products, dateRange]);
+
+  // Load ROI summary - recalculate when products change or date filter changes
+  useEffect(() => {
+    const calculateROISummary = () => {
+      // Calculate from filtered products
+      const totalProfit = filteredProducts.reduce((sum, p) => sum + (p.estimated_profit || 0), 0);
+      const avgROI = filteredProducts.length > 0
+        ? filteredProducts.reduce((sum, p) => sum + (p.roi_percentage || 0), 0) / filteredProducts.length
+        : 0;
+      
+      const topProduct = [...filteredProducts]
+        .filter(p => p.roi_percentage && p.roi_percentage > 0)
+        .sort((a, b) => (b.roi_percentage || 0) - (a.roi_percentage || 0))[0];
+      
+      setROISummary({
+        totalProfit,
+        avgROI,
+        topProduct: topProduct?.name || ''
+      });
+    };
+    
+    calculateROISummary();
+  }, [filteredProducts]);
 
   // Enhanced Stats with Trends
   const enhancedStats = useMemo(() => {
