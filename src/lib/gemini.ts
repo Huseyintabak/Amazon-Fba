@@ -5,7 +5,8 @@ import { mockDashboardInsights, mockProductAnalysis, mockPriceOptimization } fro
 const GEMINI_API_KEY = 'AIzaSyBamRJ6VFw9YZ3x36RyTW8NgpMp8_uzXTQ';
 
 // Feature flag for using mock data (set to true if API has issues)
-const USE_MOCK_DATA = false;
+// Currently enabled due to Gemini API model availability issues
+const USE_MOCK_DATA = true;
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
