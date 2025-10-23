@@ -1,7 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { mockDashboardInsights, mockProductAnalysis, mockPriceOptimization } from './geminiMock';
 
 // Gemini API Configuration
 const GEMINI_API_KEY = 'AIzaSyBamRJ6VFw9YZ3x36RyTW8NgpMp8_uzXTQ';
+
+// Feature flag for using mock data (set to true if API has issues)
+const USE_MOCK_DATA = false;
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -82,7 +86,12 @@ export const analyzeProductPerformance = async (product: {
   units_sold?: number;
   revenue_generated?: number;
 }): Promise<ProductAnalysis> => {
-  const prompt = `
+  if (USE_MOCK_DATA) {
+    return Promise.resolve(mockProductAnalysis);
+  }
+
+  try {
+    const prompt = `
 Amazon FBA ürünü analiz et:
 
 Ürün Bilgileri:
@@ -114,7 +123,11 @@ Türkçe, kısa ve net yanıt ver.
   "strengths": ["güçlü yan 1"]
 }`;
 
-  return generateStructuredResponse<ProductAnalysis>(prompt, schema);
+    return await generateStructuredResponse<ProductAnalysis>(prompt, schema);
+  } catch (error) {
+    console.warn('Product analysis failed, using mock data:', error);
+    return mockProductAnalysis;
+  }
 };
 
 // Helper: Generate price optimization suggestions
@@ -136,7 +149,12 @@ export const optimizePrice = async (product: {
   profit_margin?: number;
   units_sold?: number;
 }): Promise<PriceOptimization> => {
-  const prompt = `
+  if (USE_MOCK_DATA) {
+    return Promise.resolve(mockPriceOptimization);
+  }
+
+  try {
+    const prompt = `
 Amazon FBA ürünü için fiyat optimizasyonu:
 
 Ürün: ${product.name}
@@ -149,7 +167,7 @@ Aylık Satış: ${product.units_sold || 0} birim
 Optimal fiyat önerisi yap. Hem karlılığı hem de satış hacmini dikkate al.
 `;
 
-  const schema = `{
+    const schema = `{
   "currentPrice": number,
   "suggestedPrice": number,
   "reasoning": "kısa açıklama",
@@ -159,7 +177,11 @@ Optimal fiyat önerisi yap. Hem karlılığı hem de satış hacmini dikkate al.
   }
 }`;
 
-  return generateStructuredResponse<PriceOptimization>(prompt, schema);
+    return await generateStructuredResponse<PriceOptimization>(prompt, schema);
+  } catch (error) {
+    console.warn('Price optimization failed, using mock data:', error);
+    return mockPriceOptimization;
+  }
 };
 
 // Helper: Generate dashboard insights
@@ -178,7 +200,14 @@ export const generateDashboardInsights = async (data: {
   topProducts: Array<{ name: string; profit: number }>;
   bottomProducts: Array<{ name: string; profit: number }>;
 }): Promise<DashboardInsight[]> => {
-  const prompt = `
+  // Use mock data if flag is enabled or API fails
+  if (USE_MOCK_DATA) {
+    console.log('Using mock dashboard insights');
+    return Promise.resolve(mockDashboardInsights);
+  }
+
+  try {
+    const prompt = `
 Amazon FBA işletme verileri:
 
 Toplam Ürün: ${data.totalProducts}
@@ -201,7 +230,7 @@ ${data.bottomProducts.map(p => `- ${p.name}: $${p.profit}`).join('\n')}
 Türkçe ve eylem odaklı ol.
 `;
 
-  const schema = `[
+    const schema = `[
   {
     "type": "success",
     "title": "Başlık",
@@ -210,7 +239,11 @@ Türkçe ve eylem odaklı ol.
   }
 ]`;
 
-  return generateStructuredResponse<DashboardInsight[]>(prompt, schema);
+    return await generateStructuredResponse<DashboardInsight[]>(prompt, schema);
+  } catch (error) {
+    console.warn('Gemini API failed, using mock data:', error);
+    return mockDashboardInsights;
+  }
 };
 
 // Helper: Smart restock alert
