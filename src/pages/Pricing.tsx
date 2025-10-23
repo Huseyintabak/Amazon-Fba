@@ -14,19 +14,21 @@ const Pricing: React.FC = () => {
       name: 'Free',
       price: 0,
       period: 'Ücretsiz',
-      description: 'Küçük işletmeler için başlangıç planı',
+      description: 'İşinizi başlatmak için ideal',
       features: getPlanFeatures('free'),
-      cta: 'Başlayın',
+      cta: 'Ücretsiz Başlayın',
       highlighted: false,
+      badge: null,
     },
     {
       name: 'Pro',
       price: 19,
       period: '/ay',
-      description: 'Büyüyen işletmeler için profesyonel plan',
+      description: 'AI destekli büyüme için en iyi seçim',
       features: getPlanFeatures('pro'),
       cta: 'Pro\'ya Yükseltin',
       highlighted: true,
+      badge: 'EN POPÜLER',
     },
   ];
 
@@ -45,15 +47,22 @@ const Pricing: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-md mb-6">
+            <span className="text-2xl">🤖</span>
+            <span className="text-sm font-semibold text-gray-700">AI Destekli Amazon FBA Tracker</span>
+            <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">YENİ</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Basit ve Şeffaf Fiyatlandırma
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             İhtiyacınıza uygun planı seçin. İstediğiniz zaman yükseltin veya iptal edin.
+            <br />
+            <span className="text-purple-600 font-semibold">Pro plan ile AI özelliklerine sınırsız erişim!</span>
           </p>
         </div>
 
@@ -61,67 +70,89 @@ const Pricing: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
           {plans.map((plan) => {
             const isCurrentPlan = planType === plan.name.toLowerCase();
+            const isPro = plan.name === 'Pro';
             
             return (
               <div
                 key={plan.name}
-                className={`card relative ${
+                className={`relative rounded-2xl overflow-hidden ${
                   plan.highlighted
-                    ? 'border-2 border-primary shadow-xl'
-                    : 'border border-gray-200'
+                    ? 'shadow-2xl transform hover:scale-105 transition-all duration-300'
+                    : 'shadow-lg hover:shadow-xl transition-all duration-300'
                 }`}
               >
-                {plan.highlighted && (
-                  <div className="absolute top-0 right-0 -mt-3 -mr-3">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary text-white">
-                      Popüler
-                    </span>
-                  </div>
+                {/* Gradient Background for Pro */}
+                {isPro && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 opacity-95"></div>
+                )}
+                
+                {/* White Background for Free */}
+                {!isPro && (
+                  <div className="absolute inset-0 bg-white"></div>
                 )}
 
-                {isCurrentPlan && (
-                  <div className="absolute top-0 left-0 -mt-3 -ml-3">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500 text-white">
-                      Mevcut Plan
-                    </span>
+                {/* Content */}
+                <div className="relative p-8">
+                  {/* Badges */}
+                  <div className="flex items-center justify-between mb-6">
+                    {plan.badge && (
+                      <span className="px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full shadow-lg">
+                        {plan.badge}
+                      </span>
+                    )}
+                    {isCurrentPlan && (
+                      <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg ml-auto">
+                        Mevcut Plan
+                      </span>
+                    )}
                   </div>
-                )}
 
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {plan.name}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{plan.description}</p>
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-5xl font-bold text-gray-900">
-                      ${plan.price}
-                    </span>
-                    <span className="text-xl text-gray-600 ml-2">
-                      {plan.period}
-                    </span>
+                  <div className="text-center mb-6">
+                    <h3 className={`text-3xl font-bold mb-2 ${isPro ? 'text-white' : 'text-gray-900'}`}>
+                      {plan.name}
+                    </h3>
+                    <p className={`mb-4 ${isPro ? 'text-gray-200' : 'text-gray-600'}`}>
+                      {plan.description}
+                    </p>
+                    <div className="flex items-baseline justify-center">
+                      <span className={`text-6xl font-bold ${isPro ? 'text-white' : 'text-gray-900'}`}>
+                        ${plan.price}
+                      </span>
+                      <span className={`text-xl ml-2 ${isPro ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {plan.period}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Features List */}
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className={`mr-3 text-lg flex-shrink-0 ${
+                          isPro ? 'text-green-300' : 'text-green-500'
+                        }`}>
+                          ✓
+                        </span>
+                        <span className={`text-sm ${isPro ? 'text-white' : 'text-gray-700'}`}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA Button */}
+                  <button
+                    onClick={() => handlePlanSelect(plan.name)}
+                    disabled={isCurrentPlan && loading}
+                    className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg ${
+                      isPro
+                        ? 'bg-white text-purple-600 hover:bg-gray-100 hover:shadow-xl'
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl'
+                    } ${isCurrentPlan ? 'opacity-50 cursor-not-allowed' : 'transform hover:scale-105'}`}
+                  >
+                    {isCurrentPlan ? '✓ Mevcut Planınız' : plan.cta}
+                  </button>
                 </div>
-
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-green-500 mr-3 text-xl">✓</span>
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handlePlanSelect(plan.name)}
-                  disabled={isCurrentPlan && loading}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                    plan.highlighted
-                      ? 'btn-primary'
-                      : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
-                  } ${isCurrentPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {isCurrentPlan ? 'Mevcut Planınız' : plan.cta}
-                </button>
               </div>
             );
           })}
@@ -149,9 +180,41 @@ const Pricing: React.FC = () => {
               </h3>
               <p className="text-gray-600">
                 10'dan fazla ürününüz veya ayda 5'ten fazla sevkiyatınız varsa,
-                Pro plan size daha uygun olacaktır. Ayrıca CSV import/export ve
-                gelişmiş raporlama özelliklerine erişim sağlar.
+                Pro plan size daha uygun olacaktır. Ayrıca <strong>AI özelliklerine sınırsız erişim</strong>,
+                CSV import/export, gelişmiş raporlama, ROI tracking ve toplu işlemler gibi
+                premium özelliklere erişim sağlar.
               </p>
+            </div>
+
+            <div className="card bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+              <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                🤖 AI özellikleri neler?
+              </h3>
+              <p className="text-gray-600 mb-3">
+                Pro plan ile şu AI özelliklerine erişebilirsiniz:
+              </p>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start">
+                  <span className="text-purple-600 mr-2">•</span>
+                  <span><strong>AI Chat Asistanı:</strong> Sınırsız mesaj, GPT-4 destekli</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-purple-600 mr-2">•</span>
+                  <span><strong>Trend Analizi:</strong> Satış tahminleri ve gelecek projeksiyonları</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-purple-600 mr-2">•</span>
+                  <span><strong>Stok Optimizasyonu:</strong> Akıllı stok önerileri ve uyarıları</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-purple-600 mr-2">•</span>
+                  <span><strong>Pazarlama Stratejileri:</strong> AI destekli marketing önerileri</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-purple-600 mr-2">•</span>
+                  <span><strong>Ürün & Fiyat Analizi:</strong> Performans skoru ve optimal fiyat önerileri</span>
+                </li>
+              </ul>
             </div>
 
             <div className="card">
