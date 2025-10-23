@@ -20,6 +20,7 @@ import Pricing from './pages/Pricing';
 import Admin from './pages/Admin';
 import Suppliers from './pages/Suppliers';
 import AIHub from './pages/AIHub';
+import PurchaseOrders from './pages/PurchaseOrders';
 import { initGA, trackPageView } from './lib/analytics';
 
 // Wrapper component for ShipmentDetail to get params
@@ -249,6 +250,16 @@ function AppRoutes() {
                 <ProtectedRoute>
                   <Layout>
                     <AIHub />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/purchase-orders"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <PurchaseOrders />
                   </Layout>
                 </ProtectedRoute>
               }

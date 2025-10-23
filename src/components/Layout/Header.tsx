@@ -16,6 +16,7 @@ const Header: React.FC = () => {
     { name: 'Ürünler', href: '/products', icon: '📦' },
     { name: 'Sevkiyatlar', href: '/shipments', icon: '🚚' },
     { name: 'Tedarikçiler', href: '/suppliers', icon: '🏭' },
+    { name: 'Satın Alma', href: '/purchase-orders', icon: '🛒' },
     { name: 'Raporlar', href: '/reports', icon: '📊' },
     { name: 'AI Hub', href: '/ai-hub', icon: '🤖' },
     { name: 'Profil', href: '/profile', icon: '👤' },
