@@ -21,6 +21,7 @@ const Dashboard: React.FC = () => {
   const { products, shipments, dashboardStats, loadAllData } = useSupabaseStore();
   const { user, profile } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
+  const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
   
   const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
   
@@ -36,6 +37,23 @@ const Dashboard: React.FC = () => {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
   }, [shipments]);
+
+  // Filter shipments by date range
+  const filteredShipments = useMemo(() => {
+    if (dateRange === 'all') return shipments;
+    
+    const now = new Date();
+    const daysAgo = {
+      '7days': 7,
+      '30days': 30,
+      '90days': 90
+    }[dateRange];
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - daysAgo);
+    
+    return shipments.filter(s => new Date(s.shipment_date) >= cutoffDate);
+  }, [shipments, dateRange]);
 
   // Enhanced Stats Calculations
   const enhancedStats = useMemo(() => {
@@ -112,7 +130,7 @@ const Dashboard: React.FC = () => {
                    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
     
     const data = months.map((month, index) => {
-      const monthShipments = shipments.filter(shipment => {
+      const monthShipments = filteredShipments.filter(shipment => {
         const shipmentDate = new Date(shipment.shipment_date);
         return shipmentDate.getMonth() === index;
       });
@@ -138,11 +156,11 @@ const Dashboard: React.FC = () => {
     }
     
     return last6Months;
-  }, [shipments]);
+  }, [filteredShipments]);
 
   // Carrier distribution data
   const carrierData = useMemo(() => {
-    const carriers = shipments.reduce((acc, shipment) => {
+    const carriers = filteredShipments.reduce((acc, shipment) => {
       const carrier = shipment.carrier_company;
       if (!acc[carrier]) {
         acc[carrier] = { count: 0, totalCost: 0 };
@@ -152,7 +170,7 @@ const Dashboard: React.FC = () => {
       return acc;
     }, {} as Record<string, { count: number; totalCost: number }>);
 
-    const totalShipments = shipments.length;
+    const totalShipments = filteredShipments.length;
 
     return Object.entries(carriers).map(([carrier, data]) => ({
       name: carrier,
@@ -160,7 +178,7 @@ const Dashboard: React.FC = () => {
       percentage: totalShipments > 0 ? (data.count / totalShipments) * 100 : 0,
       totalCost: data.totalCost
     }));
-  }, [shipments]);
+  }, [filteredShipments]);
 
   // Color palette for charts
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
@@ -203,13 +221,28 @@ const Dashboard: React.FC = () => {
       />
 
       <div className="space-y-8">
-        {/* Header */}
-        <div className="slide-in">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-600">
-          Amazon FBA sevkiyat takip sistemi genel bakış
-        </p>
-      </div>
+        {/* Header with Date Filter */}
+        <div className="slide-in flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Amazon FBA sevkiyat takip sistemi genel bakış
+            </p>
+          </div>
+          <div className="flex items-center space-x-3">
+            {/* Date Range Filter */}
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            >
+              <option value="7days">📅 Son 7 Gün</option>
+              <option value="30days">📅 Son 30 Gün</option>
+              <option value="90days">📅 Son 90 Gün</option>
+              <option value="all">📅 Tüm Zamanlar</option>
+            </select>
+          </div>
+        </div>
 
       {/* Stats Grid - Enhanced */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 fade-in">
