@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   BarChart, 
   Bar, 
@@ -222,7 +223,10 @@ const Dashboard: React.FC = () => {
             </h3>
           </div>
           <div className="space-y-4">
-            <button className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <Link
+              to="/products"
+              className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 block"
+            >
               <div className="flex items-center space-x-4">
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
@@ -241,9 +245,12 @@ const Dashboard: React.FC = () => {
                   <span className="text-gray-400 group-hover:text-blue-600 transition-colors">➕</span>
                 </div>
               </div>
-            </button>
+            </Link>
 
-            <button className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+            <Link
+              to="/shipments/new"
+              className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 block"
+            >
               <div className="flex items-center space-x-4">
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center group-hover:bg-green-100 transition-colors">
@@ -262,9 +269,12 @@ const Dashboard: React.FC = () => {
                   <span className="text-gray-400 group-hover:text-green-600 transition-colors">➕</span>
                 </div>
               </div>
-            </button>
+            </Link>
 
-            <button className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+            <Link
+              to="/reports"
+              className="w-full group relative bg-white p-6 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 block"
+            >
               <div className="flex items-center space-x-4">
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center group-hover:bg-purple-100 transition-colors">
@@ -283,7 +293,7 @@ const Dashboard: React.FC = () => {
                   <span className="text-gray-400 group-hover:text-purple-600 transition-colors">📊</span>
                 </div>
               </div>
-            </button>
+            </Link>
           </div>
         </div>
       </div>
