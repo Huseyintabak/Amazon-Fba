@@ -1,5 +1,14 @@
 # 🔧 BUILD FIX - Deployment Issues
 
+> **⚠️ GÜNCEL SORUN: Permission on dist/**  
+> Build başarılı ama eski dist/ klasörü sudo ile oluşturulmuş.  
+> **Çözüm:** `sudo rm -rf dist` → `npm run build`  
+> **Detay:** `SERVER_COMMANDS.md`
+
+---
+
+# 🔧 BUILD FIX - Deployment Issues
+
 **Tarih:** 23 Ekim 2025
 
 ---
