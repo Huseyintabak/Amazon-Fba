@@ -290,19 +290,38 @@ const AdvancedFiltersPanel: React.FC<AdvancedFiltersPanelProps> = ({
           {/* Shipment-specific filters */}
           {type === 'shipments' && (
             <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Durum
-                </label>
-                <select
-                  value={filters.status || 'all'}
-                  onChange={(e) => updateFilter('status', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Tümü</option>
-                  <option value="completed">Tamamlandı</option>
-                  <option value="draft">Taslak</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Durum
+                  </label>
+                  <select
+                    value={filters.status || 'all'}
+                    onChange={(e) => updateFilter('status', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Tümü</option>
+                    <option value="completed">Tamamlandı</option>
+                    <option value="draft">Taslak</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kargo Firması
+                  </label>
+                  <select
+                    value={filters.carrier || 'all'}
+                    onChange={(e) => updateFilter('carrier', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Tümü</option>
+                    <option value="UPS">UPS</option>
+                    <option value="FedEx">FedEx</option>
+                    <option value="DHL">DHL</option>
+                    <option value="USPS">USPS</option>
+                  </select>
+                </div>
               </div>
             </>
           )}

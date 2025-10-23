@@ -3,10 +3,10 @@ import { useToast } from '../contexts/ToastContext';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useSubscription } from '../hooks/useSubscription';
 import { useBulkSelection } from '../hooks/useBulkSelection';
+import { useFilterPresets } from '../hooks/useFilterPresets';
 import { Product } from '../types';
 import { processCSVFile, getCSVTemplate } from '../lib/csvImport';
-import { searchProducts, SearchFilters } from '../lib/smartSearch';
-import AdvancedSearch from '../components/AdvancedSearch';
+import AdvancedFiltersPanel, { AdvancedFilters, FilterPreset } from '../components/AdvancedFiltersPanel';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UsageBanner from '../components/UsageBanner';
 import UpgradeModal from '../components/UpgradeModal';
@@ -19,11 +19,8 @@ const Products: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, loadProducts } = useSupabaseStore();
   const { canCreateProduct, hasFeature } = useSubscription();
   const bulkSelection = useBulkSelection<Product>();
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
-    searchTerm: '',
-    manufacturer: 'all',
-    priceRange: { min: 0, max: 1000 }
-  });
+  const { presets, savePreset, deletePreset } = useFilterPresets('products');
+  const [filters, setFilters] = useState<AdvancedFilters>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<Product | null>(null);
@@ -52,12 +49,70 @@ const Products: React.FC = () => {
     loadProducts();
   }, []); // Empty dependency array to run only once
 
-  // Filtered products using advanced search
-  const searchResult = useMemo(() => {
-    return searchProducts(products, searchFilters);
-  }, [products, searchFilters]);
+  // Apply advanced filters
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
 
-  const filteredProducts = searchResult.items;
+    // Date range filter
+    if (filters.dateRange?.startDate && filters.dateRange?.endDate) {
+      filtered = filtered.filter(p => {
+        const productDate = new Date(p.created_at);
+        const start = new Date(filters.dateRange!.startDate);
+        const end = new Date(filters.dateRange!.endDate);
+        end.setHours(23, 59, 59, 999); // Include end date
+        return productDate >= start && productDate <= end;
+      });
+    }
+
+    // Search term
+    if (filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.asin.toLowerCase().includes(term) ||
+        p.merchant_sku.toLowerCase().includes(term) ||
+        p.supplier_name?.toLowerCase().includes(term) ||
+        p.manufacturer_code?.toLowerCase().includes(term)
+      );
+    }
+
+    // Cost range
+    if (filters.costRange) {
+      filtered = filtered.filter(p => {
+        const cost = p.product_cost || 0;
+        const min = filters.costRange?.min || 0;
+        const max = filters.costRange?.max || Infinity;
+        return cost >= min && cost <= max;
+      });
+    }
+
+    // Profit range
+    if (filters.profitRange) {
+      filtered = filtered.filter(p => {
+        const profit = p.estimated_profit || 0;
+        const min = filters.profitRange?.min || -Infinity;
+        const max = filters.profitRange?.max || Infinity;
+        return profit >= min && profit <= max;
+      });
+    }
+
+    // ROI range
+    if (filters.roiRange) {
+      filtered = filtered.filter(p => {
+        const roi = p.roi_percentage || 0;
+        const min = filters.roiRange?.min || -Infinity;
+        const max = filters.roiRange?.max || Infinity;
+        return roi >= min && roi <= max;
+      });
+    }
+
+    // Has profit checkbox
+    if (filters.hasProfit) {
+      filtered = filtered.filter(p => (p.estimated_profit || 0) > 0);
+    }
+
+    return filtered;
+  }, [products, filters]);
   
   // Sorting logic
   const sortedProducts = useMemo(() => {
@@ -91,21 +146,13 @@ const Products: React.FC = () => {
   const endIndex = startIndex + itemsPerPage;
   const paginatedProducts = sortedProducts.slice(startIndex, endIndex);
   
-  // Reset to first page when search filters change
+  // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchFilters]);
+  }, [filters]);
 
-  const handleSearch = (filters: SearchFilters) => {
-    setSearchFilters(filters);
-  };
-
-  const handleClearSearch = () => {
-    setSearchFilters({
-      searchTerm: '',
-      manufacturer: 'all',
-      priceRange: { min: 0, max: 1000 }
-    });
+  const handleLoadPreset = (preset: FilterPreset) => {
+    setFilters(preset.filters);
   };
 
   const handlePageChange = (page: number) => {
@@ -336,15 +383,16 @@ const Products: React.FC = () => {
         </div>
       </div>
 
-      {/* Advanced Search */}
-      <div className="card">
-        <AdvancedSearch
-          onSearch={handleSearch}
-          onClear={handleClearSearch}
-          searchType="product"
-          placeholder="Ürün adı, ASIN, SKU veya üretici ile akıllı arama..."
-        />
-      </div>
+      {/* Advanced Filters */}
+      <AdvancedFiltersPanel
+        filters={filters}
+        onChange={setFilters}
+        onSavePreset={savePreset}
+        savedPresets={presets}
+        onLoadPreset={handleLoadPreset}
+        onDeletePreset={deletePreset}
+        type="products"
+      />
 
       {/* Products Table */}
         <div className="card">
@@ -353,10 +401,8 @@ const Products: React.FC = () => {
               Ürünler ({filteredProducts.length})
             </h3>
             <p className="card-subtitle">
-              Toplam {products.length} ürün • {searchResult.appliedFilters.searchTerm ? 'Arama sonuçları' : 'Tüm ürünler'}
-              {searchResult.appliedFilters.manufacturer !== 'all' && ` • ${searchResult.appliedFilters.manufacturer} üreticisi`}
-              {searchResult.appliedFilters.priceRange && searchResult.appliedFilters.priceRange.min > 0 && 
-                ` • $${searchResult.appliedFilters.priceRange.min}-${searchResult.appliedFilters.priceRange.max} fiyat aralığı`}
+              Toplam {products.length} ürün
+              {Object.keys(filters).length > 0 && ` • ${filteredProducts.length} filtrelenmiş sonuç`}
               {totalPages > 1 && ` • Sayfa ${currentPage}/${totalPages}`}
             </p>
           </div>

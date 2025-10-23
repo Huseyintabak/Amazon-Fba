@@ -144,27 +144,33 @@ POST /api/products/duplicate
 
 ---
 
-### **1.4 Custom Date Ranges & Advanced Filters** 📅
+### **1.4 Custom Date Ranges & Advanced Filters** 📅 ✅ TAMAMLANDI
 **Süre:** 1 gün  
 **Öncelik:** 🟡 Orta  
 **Plan Kısıtı:** Pro
 
 #### **Özellikler:**
-- [ ] **Date Range Picker**
-  - Custom date range selection
-  - Preset ranges (7 days, 30 days, 3 months, etc.)
-  - Compare periods (This month vs. Last month)
+- [x] **Date Range Picker** ✅ TAMAMLANDI
+  - 10 preset date ranges (Bugün, Dün, Son 7/30/90 gün, vb.)
+  - Custom date selection
+  - Modern dropdown UI with split panel
+  - Turkish labels and formatting
   
-- [ ] **Advanced Filters**
-  - Multi-filter support
-  - Save filter presets
-  - Filter by profit margin
-  - Filter by ROI
+- [x] **Advanced Filters** ✅ TAMAMLANDI
+  - Multi-filter combinations (date, search, cost, profit, ROI)
+  - Save/load filter presets with custom names & icons
+  - localStorage persistence (type-specific)
+  - Active filter count badges
+  - Product filters: Cost range, Profit range, ROI range, Has profit checkbox
+  - Shipment filters: Status, Carrier, Date range
+  - Expandable/collapsible panel UI
 
-#### **UI Components:**
-- `DateRangePicker.tsx` - Tarih seçici
-- `AdvancedFilterPanel.tsx` - Gelişmiş filtre paneli
-- `FilterPresets.tsx` - Kayıtlı filtreler
+#### **UI Components:** ✅
+- [x] `DateRangePicker.tsx` - Tarih seçici component
+- [x] `AdvancedFiltersPanel.tsx` - Gelişmiş filtre paneli (multi-type support)
+- [x] `useFilterPresets.ts` - Custom hook for preset management
+- [x] Integrated into Products, Shipments, Reports pages
+- [x] `ADVANCED_FILTERS_USAGE.md` - Complete usage documentation
 
 ---
 

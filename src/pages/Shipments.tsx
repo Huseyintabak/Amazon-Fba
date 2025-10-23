@@ -1,20 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { getProductsByShipment } from '../lib/mockData';
 import { Shipment } from '../types';
-import { searchShipments, SearchFilters } from '../lib/smartSearch';
-import AdvancedSearch from '../components/AdvancedSearch';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useFilterPresets } from '../hooks/useFilterPresets';
+import AdvancedFiltersPanel, { AdvancedFilters, FilterPreset } from '../components/AdvancedFiltersPanel';
 import LoadingSpinner from '../components/LoadingSpinner';
 // import { validateShipment, ValidationResult } from '../lib/validation';
 
 const Shipments: React.FC = () => {
   const { shipments, deleteShipment, loadShipments } = useSupabaseStore();
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
-    searchTerm: '',
-    carrier: 'all',
-    status: 'all',
-    dateRange: { start: '', end: '' }
-  });
+  const { presets, savePreset, deletePreset } = useFilterPresets('shipments');
+  const [filters, setFilters] = useState<AdvancedFilters>({});
   const [showDeleteModal, setShowDeleteModal] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   // const [validationErrors, setValidationErrors] = useState<ValidationResult | null>(null);
@@ -24,24 +20,46 @@ const Shipments: React.FC = () => {
     loadShipments();
   }, [loadShipments]);
 
-  // Filtered shipments using advanced search
-  const searchResult = useMemo(() => {
-    return searchShipments(shipments, searchFilters);
-  }, [shipments, searchFilters]);
+  // Apply advanced filters
+  const filteredShipments = useMemo(() => {
+    let filtered = [...shipments];
 
-  const filteredShipments = searchResult.items;
+    // Date range filter
+    if (filters.dateRange?.startDate && filters.dateRange?.endDate) {
+      filtered = filtered.filter(s => {
+        const shipmentDate = new Date(s.shipment_date);
+        const start = new Date(filters.dateRange!.startDate);
+        const end = new Date(filters.dateRange!.endDate);
+        end.setHours(23, 59, 59, 999);
+        return shipmentDate >= start && shipmentDate <= end;
+      });
+    }
 
-  const handleSearch = (filters: SearchFilters) => {
-    setSearchFilters(filters);
-  };
+    // Search term
+    if (filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filtered = filtered.filter(s =>
+        s.fba_shipment_id.toLowerCase().includes(term) ||
+        s.carrier_company.toLowerCase().includes(term) ||
+        s.notes?.toLowerCase().includes(term)
+      );
+    }
 
-  const handleClearSearch = () => {
-    setSearchFilters({
-      searchTerm: '',
-      carrier: 'all',
-      status: 'all',
-      dateRange: { start: '', end: '' }
-    });
+    // Status filter
+    if (filters.status && filters.status !== 'all') {
+      filtered = filtered.filter(s => s.status === filters.status);
+    }
+
+    // Carrier filter
+    if (filters.carrier && filters.carrier !== 'all') {
+      filtered = filtered.filter(s => s.carrier_company === filters.carrier);
+    }
+
+    return filtered;
+  }, [shipments, filters]);
+
+  const handleLoadPreset = (preset: FilterPreset) => {
+    setFilters(preset.filters);
   };
 
   const handleDelete = async (shipmentId: string) => {
@@ -108,15 +126,16 @@ const Shipments: React.FC = () => {
         </button>
       </div>
 
-      {/* Advanced Search */}
-      <div className="card">
-        <AdvancedSearch
-          onSearch={handleSearch}
-          onClear={handleClearSearch}
-          searchType="shipment"
-          placeholder="FBA ID, kargo firması veya not ile akıllı arama..."
-        />
-      </div>
+      {/* Advanced Filters */}
+      <AdvancedFiltersPanel
+        filters={filters}
+        onChange={setFilters}
+        onSavePreset={savePreset}
+        savedPresets={presets}
+        onLoadPreset={handleLoadPreset}
+        onDeletePreset={deletePreset}
+        type="shipments"
+      />
 
       {/* Shipments Table */}
       <div className="card">
@@ -125,10 +144,8 @@ const Shipments: React.FC = () => {
             Sevkiyatlar ({filteredShipments.length})
           </h3>
           <p className="card-subtitle">
-            Toplam {shipments.length} sevkiyat • {searchResult.appliedFilters.searchTerm ? 'Arama sonuçları' : 'Tüm sevkiyatlar'}
-            {searchResult.appliedFilters.carrier !== 'all' && ` • ${searchResult.appliedFilters.carrier} kargo firması`}
-            {searchResult.appliedFilters.status !== 'all' && ` • ${searchResult.appliedFilters.status === 'completed' ? 'Tamamlandı' : 'Taslak'} durumu`}
-            {searchResult.appliedFilters.dateRange?.start && ` • ${searchResult.appliedFilters.dateRange.start} - ${searchResult.appliedFilters.dateRange.end} tarih aralığı`}
+            Toplam {shipments.length} sevkiyat
+            {Object.keys(filters).length > 0 && ` • ${filteredShipments.length} filtrelenmiş sonuç`}
           </p>
         </div>
 

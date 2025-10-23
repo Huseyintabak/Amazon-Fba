@@ -18,14 +18,25 @@ import {
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { supabase } from '../lib/supabase';
 import { CostBreakdown, ROIPerformance } from '../types';
+import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 
 const Reports: React.FC = () => {
   const { shipments, loadAllData } = useSupabaseStore();
   const [activeTab, setActiveTab] = useState<'shipments' | 'roi'>('shipments');
-  const [dateRange, setDateRange] = useState({
-    start: '2024-01-01',
-    end: '2024-12-31'
-  });
+  
+  // Initialize with last 90 days
+  const getDefaultDateRange = (): DateRange => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - 89);
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0],
+      preset: 'last90days'
+    };
+  };
+  
+  const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange());
   const [selectedCarrier, setSelectedCarrier] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   
@@ -78,8 +89,9 @@ const Reports: React.FC = () => {
   const filteredShipments = useMemo(() => {
     return shipments.filter(shipment => {
       const shipmentDate = new Date(shipment.shipment_date);
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
+      const startDate = new Date(dateRange.startDate);
+      const endDate = new Date(dateRange.endDate);
+      endDate.setHours(23, 59, 59, 999);
       
       const dateMatch = shipmentDate >= startDate && shipmentDate <= endDate;
       const carrierMatch = selectedCarrier === 'all' || shipment.carrier_company === selectedCarrier;
@@ -257,23 +269,12 @@ const Reports: React.FC = () => {
           {/* Filters */}
           <div className="card">
             <h3 className="card-title mb-4">Filtreler</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="label">Başlangıç Tarihi</label>
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="label">Bitiş Tarihi</label>
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  className="input-field"
+                <label className="label">Tarih Aralığı</label>
+                <DateRangePicker
+                  value={dateRange}
+                  onChange={setDateRange}
                 />
               </div>
               <div>
