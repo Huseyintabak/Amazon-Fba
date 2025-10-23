@@ -63,6 +63,8 @@ jspm_packages/
 
 # TypeScript
 *.tsbuildinfo
+vite.config.d.ts
+vite.config.js
 
 # Build artifacts
 *.tar.gz
