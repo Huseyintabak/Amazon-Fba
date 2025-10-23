@@ -401,13 +401,13 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('merchant_sku')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell w-24">
+                <th className="table-header-cell w-32">
                   <button
-                    onClick={() => handleSort('manufacturer')}
+                    onClick={() => handleSort('supplier_name')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
                   >
-                    <span>Üretici</span>
-                    <span className="text-sm">{getSortIcon('manufacturer')}</span>
+                    <span>Tedarikçi</span>
+                    <span className="text-sm">{getSortIcon('supplier_name')}</span>
                   </button>
                 </th>
                 <th className="table-header-cell w-24">
@@ -417,15 +417,6 @@ const Products: React.FC = () => {
                   >
                     <span>Üretici Kodu</span>
                     <span className="text-sm">{getSortIcon('manufacturer_code')}</span>
-                  </button>
-                </th>
-                <th className="table-header-cell w-32">
-                  <button
-                    onClick={() => handleSort('supplier_name')}
-                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                  >
-                    <span>Tedarikçi</span>
-                    <span className="text-sm">{getSortIcon('supplier_name')}</span>
                   </button>
                 </th>
                 <th className="table-header-cell w-28">
@@ -499,13 +490,20 @@ const Products: React.FC = () => {
                       {product.merchant_sku}
                     </code>
                   </td>
-                  <td className="table-cell w-24">
-                    {product.manufacturer ? (
-                      <span className="badge badge-info truncate block">
-                        {product.manufacturer}
-                      </span>
+                  <td className="table-cell w-32">
+                    {product.supplier_name ? (
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 truncate">
+                          {product.supplier_name}
+                        </span>
+                        {product.supplier_country && (
+                          <span className="text-xs text-gray-500">
+                            {product.supplier_country}
+                          </span>
+                        )}
+                      </div>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-xs text-gray-400">-</span>
                     )}
                   </td>
                   <td className="table-cell w-24">
@@ -515,22 +513,6 @@ const Products: React.FC = () => {
                       </code>
                     ) : (
                       <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="table-cell w-32">
-                    {product.supplier_name ? (
-                      <div className="flex flex-col">
-                        <span className="font-medium text-gray-900 truncate">
-                          🏭 {product.supplier_name}
-                        </span>
-                        {product.supplier_country && (
-                          <span className="text-xs text-gray-500">
-                            {product.supplier_country}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">Belirlenmemiş</span>
                     )}
                   </td>
                   <td className="table-cell w-28">
@@ -892,14 +874,26 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
           </div>
 
           <div>
-            <label className="label">Üretici</label>
-            <input
-              type="text"
-              value={formData.manufacturer}
-              onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+            <label className="label">Tedarikçi</label>
+            <select
+              value={formData.supplier_id}
+              onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
               className="input-field"
-              placeholder="Üretici adı"
-            />
+            >
+              <option value="">Tedarikçi seçiniz</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                  {supplier.company_name ? ` (${supplier.company_name})` : ''}
+                  {supplier.country ? ` - ${supplier.country}` : ''}
+                </option>
+              ))}
+            </select>
+            {suppliers.length === 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Henüz tedarikçi yok. <a href="/suppliers" className="text-blue-600 hover:underline">Tedarikçi ekle</a>
+              </p>
+            )}
           </div>
 
           <div>
@@ -909,7 +903,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
               value={formData.manufacturer_code}
               onChange={(e) => setFormData({ ...formData, manufacturer_code: e.target.value })}
               className="input-field"
-              placeholder="Üretici kodu"
+              placeholder="Üretici kodu (opsiyonel)"
             />
           </div>
 
@@ -938,30 +932,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
                 placeholder="0.00"
               />
             </div>
-          </div>
-
-          {/* Supplier Selection */}
-          <div>
-            <label className="label">🏭 Tedarikçi</label>
-            <select
-              value={formData.supplier_id}
-              onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
-              className="input-field"
-            >
-              <option value="">Tedarikçi Seçiniz</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                  {supplier.company_name ? ` (${supplier.company_name})` : ''}
-                  {supplier.country ? ` - ${supplier.country}` : ''}
-                </option>
-              ))}
-            </select>
-            {suppliers.length === 0 && (
-              <p className="text-xs text-gray-500 mt-1">
-                Henüz tedarikçi yok. <a href="/suppliers" className="text-blue-600 hover:underline">Tedarikçi ekle</a>
-              </p>
-            )}
           </div>
 
           {/* Profit Calculator Toggle */}
