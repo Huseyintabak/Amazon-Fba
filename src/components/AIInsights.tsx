@@ -19,21 +19,27 @@ const AIInsights: React.FC<AIInsightsProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [hasAttempted, setHasAttempted] = useState(false);
 
-  useEffect(() => {
-    if (products.length > 0) {
-      loadInsights();
-    }
-  }, [products.length]); // Only reload when product count changes
+  // Don't auto-load, wait for user to click
+  // useEffect removed to prevent automatic API calls
 
   const loadInsights = async () => {
     try {
       setIsLoading(true);
       setError(null);
+      setHasAttempted(true);
+
+      // Validate data
+      if (products.length === 0) {
+        setError('Önce ürün eklemeniz gerekiyor.');
+        setIsLoading(false);
+        return;
+      }
 
       // Prepare data for AI
       const sortedByProfit = [...products]
-        .filter(p => p.estimated_profit !== undefined)
+        .filter(p => p.estimated_profit !== undefined && p.estimated_profit !== null)
         .sort((a, b) => (b.estimated_profit || 0) - (a.estimated_profit || 0));
 
       const topProducts = sortedByProfit.slice(0, 3).map(p => ({
@@ -48,18 +54,23 @@ const AIInsights: React.FC<AIInsightsProps> = ({
 
       const data = {
         totalProducts: products.length,
-        totalRevenue,
-        totalProfit,
-        averageROI,
+        totalRevenue: totalRevenue || 0,
+        totalProfit: totalProfit || 0,
+        averageROI: averageROI || 0,
         topProducts,
         bottomProducts
       };
 
+      console.log('AI Insights - Sending data:', data);
+
       const aiInsights = await generateDashboardInsights(data);
+      console.log('AI Insights - Received:', aiInsights);
+      
       setInsights(aiInsights);
-    } catch (err) {
+    } catch (err: any) {
       console.error('AI Insights error:', err);
-      setError('AI önerileri yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+      const errorMessage = err?.message || 'AI önerileri yüklenemedi.';
+      setError(`${errorMessage} (CORS veya API hatası olabilir)`);
     } finally {
       setIsLoading(false);
     }
@@ -180,14 +191,28 @@ const AIInsights: React.FC<AIInsightsProps> = ({
           )}
 
           {!isLoading && !error && insights.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p className="text-sm">Henüz AI önerisi yok.</p>
+            <div className="text-center py-8">
+              <span className="text-5xl block mb-3">🤖</span>
+              <p className="text-sm text-gray-600 mb-1">
+                {hasAttempted 
+                  ? 'AI önerileri yüklenemedi.' 
+                  : 'AI henüz işletmenizi analiz etmedi.'}
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                {products.length > 0 
+                  ? 'Gemini Pro ile akıllı öneriler alın!'
+                  : 'Önce birkaç ürün ekleyin.'}
+              </p>
               <button
                 onClick={loadInsights}
-                className="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+                disabled={products.length === 0}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                İlk Analizi Başlat
+                🚀 AI Analizi Başlat
               </button>
+              <p className="text-xs text-gray-400 mt-3">
+                💡 Not: İlk seferinde birkaç saniye sürebilir
+              </p>
             </div>
           )}
         </>

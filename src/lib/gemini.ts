@@ -18,9 +18,21 @@ export const generateAIResponse = async (prompt: string): Promise<string> => {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Gemini API Error:', error);
-    throw new Error('AI yanıt oluşturulamadı');
+    
+    // Better error messages
+    if (error?.message?.includes('fetch')) {
+      throw new Error('Bağlantı hatası - İnternet bağlantınızı kontrol edin');
+    }
+    if (error?.message?.includes('API key')) {
+      throw new Error('API key hatası');
+    }
+    if (error?.message?.includes('quota')) {
+      throw new Error('API kotası doldu');
+    }
+    
+    throw new Error(error?.message || 'AI yanıt oluşturulamadı');
   }
 };
 
