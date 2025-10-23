@@ -30,38 +30,28 @@ const Dashboard: React.FC = () => {
   
   const stats = dashboardStats || { total_products: 0, total_shipments: 0, total_shipped_quantity: 0, total_shipping_cost: 0 };
 
-  // Load ROI summary
+  // Load ROI summary - recalculate when products change or date filter changes
   useEffect(() => {
-    const loadROISummary = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('roi_performance')
-          .select('*')
-          .order('roi_percentage', { ascending: false })
-          .limit(1);
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          const { data: allData } = await supabase.from('roi_performance').select('net_profit, roi_percentage');
-          const totalProfit = allData?.reduce((sum, item) => sum + (item.net_profit || 0), 0) || 0;
-          const avgROI = allData && allData.length > 0 
-            ? allData.reduce((sum, item) => sum + (item.roi_percentage || 0), 0) / allData.length 
-            : 0;
-          
-          setROISummary({
-            totalProfit,
-            avgROI,
-            topProduct: data[0].product_name || ''
-          });
-        }
-      } catch (error) {
-        console.error('Error loading ROI summary:', error);
-      }
+    const calculateROISummary = () => {
+      // Calculate from filtered products
+      const totalProfit = filteredProducts.reduce((sum, p) => sum + (p.estimated_profit || 0), 0);
+      const avgROI = filteredProducts.length > 0
+        ? filteredProducts.reduce((sum, p) => sum + (p.roi_percentage || 0), 0) / filteredProducts.length
+        : 0;
+      
+      const topProduct = [...filteredProducts]
+        .filter(p => p.roi_percentage && p.roi_percentage > 0)
+        .sort((a, b) => (b.roi_percentage || 0) - (a.roi_percentage || 0))[0];
+      
+      setROISummary({
+        totalProfit,
+        avgROI,
+        topProduct: topProduct?.name || ''
+      });
     };
     
-    loadROISummary();
-  }, []);
+    calculateROISummary();
+  }, [filteredProducts]);
   
   // Filter shipments by date range
   const filteredShipments = useMemo(() => {
@@ -80,42 +70,64 @@ const Dashboard: React.FC = () => {
     return shipments.filter(s => new Date(s.shipment_date) >= cutoffDate);
   }, [shipments, dateRange]);
 
+  // Filter products by date range
+  const filteredProducts = useMemo(() => {
+    if (dateRange === 'all') return products;
+    
+    const now = new Date();
+    const daysAgo = {
+      '7days': 7,
+      '30days': 30,
+      '90days': 90
+    }[dateRange];
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - daysAgo);
+    
+    return products.filter(p => new Date(p.created_at) >= cutoffDate);
+  }, [products, dateRange]);
+
   // Enhanced Stats with Trends
   const enhancedStats = useMemo(() => {
-    const totalProductValue = products.reduce((sum, p) => sum + (p.product_cost || 0), 0);
-    const avgProductCost = products.length > 0 ? totalProductValue / products.length : 0;
+    const totalProductValue = filteredProducts.reduce((sum, p) => sum + (p.product_cost || 0), 0);
+    const avgProductCost = filteredProducts.length > 0 ? totalProductValue / filteredProducts.length : 0;
     
     // Products with profit data
-    const profitableProducts = products.filter(p => (p.estimated_profit || 0) > 0).length;
-    const avgProfit = products.length > 0 
-      ? products.reduce((sum, p) => sum + (p.estimated_profit || 0), 0) / products.length 
+    const profitableProducts = filteredProducts.filter(p => (p.estimated_profit || 0) > 0).length;
+    const avgProfit = filteredProducts.length > 0 
+      ? filteredProducts.reduce((sum, p) => sum + (p.estimated_profit || 0), 0) / filteredProducts.length 
       : 0;
 
-    // Last 30 days comparison
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const last30DaysProducts = products.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length;
-    const last30DaysShipments = shipments.filter(s => new Date(s.shipment_date) >= thirtyDaysAgo).length;
-
-    // Previous 30 days
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const prev30DaysProducts = products.filter(p => {
+    // Calculate period for trend comparison
+    const now = new Date();
+    const periodDays = dateRange === '7days' ? 7 : dateRange === '30days' ? 30 : dateRange === '90days' ? 90 : 365;
+    const currentPeriodStart = new Date();
+    currentPeriodStart.setDate(now.getDate() - periodDays);
+    
+    const previousPeriodStart = new Date();
+    previousPeriodStart.setDate(now.getDate() - (periodDays * 2));
+    
+    // Current period counts
+    const currentPeriodProducts = products.filter(p => new Date(p.created_at) >= currentPeriodStart).length;
+    const currentPeriodShipments = shipments.filter(s => new Date(s.shipment_date) >= currentPeriodStart).length;
+    
+    // Previous period counts
+    const previousPeriodProducts = products.filter(p => {
       const date = new Date(p.created_at);
-      return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+      return date >= previousPeriodStart && date < currentPeriodStart;
     }).length;
-    const prev30DaysShipments = shipments.filter(s => {
+    const previousPeriodShipments = shipments.filter(s => {
       const date = new Date(s.shipment_date);
-      return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+      return date >= previousPeriodStart && date < currentPeriodStart;
     }).length;
 
     // Calculate trends
-    const productTrend = prev30DaysProducts > 0 
-      ? ((last30DaysProducts - prev30DaysProducts) / prev30DaysProducts) * 100 
-      : (last30DaysProducts > 0 ? 100 : 0);
-    const shipmentTrend = prev30DaysShipments > 0 
-      ? ((last30DaysShipments - prev30DaysShipments) / prev30DaysShipments) * 100 
-      : (last30DaysShipments > 0 ? 100 : 0);
+    const productTrend = previousPeriodProducts > 0 
+      ? ((currentPeriodProducts - previousPeriodProducts) / previousPeriodProducts) * 100 
+      : (currentPeriodProducts > 0 ? 100 : 0);
+    const shipmentTrend = previousPeriodShipments > 0 
+      ? ((currentPeriodShipments - previousPeriodShipments) / previousPeriodShipments) * 100 
+      : (currentPeriodShipments > 0 ? 100 : 0);
 
     return {
       totalProductValue,
@@ -124,9 +136,9 @@ const Dashboard: React.FC = () => {
       avgProfit,
       productTrend,
       shipmentTrend,
-      last30DaysShipments
+      currentPeriodShipments
     };
-  }, [products, shipments]);
+  }, [filteredProducts, products, shipments, dateRange]);
 
   // Load all data on component mount
   useEffect(() => {
@@ -177,16 +189,27 @@ const Dashboard: React.FC = () => {
     return last6Months;
   }, [filteredShipments]);
 
-  // Top products by profit
+  // Top products by profit (from filtered products)
   const topProducts = useMemo(() => {
-    return [...products]
+    return [...filteredProducts]
       .filter(p => (p.estimated_profit || 0) > 0)
       .sort((a, b) => (b.estimated_profit || 0) - (a.estimated_profit || 0))
       .slice(0, 5);
-  }, [products]);
+  }, [filteredProducts]);
 
   // Color palette
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+  // Get trend label based on date range
+  const getTrendLabel = () => {
+    const labels = {
+      '7days': 'son 7 gün',
+      '30days': 'son 30 gün',
+      '90days': 'son 90 gün',
+      'all': 'önceki dönem'
+    };
+    return labels[dateRange];
+  };
 
   const StatCard: React.FC<{
     title: string;
@@ -209,7 +232,7 @@ const Dashboard: React.FC = () => {
                 : 'bg-red-50 text-red-700'
             }`}>
               <span className="mr-1">{trend >= 0 ? '↑' : '↓'}</span>
-              {Math.abs(trend).toFixed(1)}% son 30 gün
+              {Math.abs(trend).toFixed(1)}% vs {getTrendLabel()}
             </div>
           )}
         </div>
@@ -251,14 +274,14 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Toplam Ürün"
-            value={stats.total_products}
+            value={filteredProducts.length}
             icon="📦"
             trend={enhancedStats.productTrend}
             color="text-blue-600"
           />
           <StatCard
             title="Toplam Sevkiyat"
-            value={stats.total_shipments}
+            value={filteredShipments.length}
             icon="🚚"
             trend={enhancedStats.shipmentTrend}
             color="text-green-600"
@@ -462,7 +485,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Karlı Ürünler</p>
-                    <p className="text-sm font-bold text-gray-900">{enhancedStats.profitableProducts}/{stats.total_products}</p>
+                    <p className="text-sm font-bold text-gray-900">{enhancedStats.profitableProducts}/{filteredProducts.length}</p>
                   </div>
                 </div>
               </div>
@@ -486,7 +509,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Kargo Maliyeti</p>
-                    <p className="text-sm font-bold text-gray-900">${stats.total_shipping_cost.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-gray-900">${filteredShipments.reduce((sum, s) => sum + s.total_shipping_cost, 0).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
