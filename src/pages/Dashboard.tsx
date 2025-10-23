@@ -8,7 +8,6 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
   Line,
   PieChart,
   Pie,
@@ -95,7 +94,7 @@ const Dashboard: React.FC = () => {
     }
   }, [profile]);
 
-  // Monthly data for charts
+  // Monthly data for charts - Enhanced
   const monthlyData = useMemo(() => {
     const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
                    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -107,15 +106,26 @@ const Dashboard: React.FC = () => {
       });
       
       const totalCost = monthShipments.reduce((sum, s) => sum + s.total_shipping_cost, 0);
+      const avgCost = monthShipments.length > 0 ? totalCost / monthShipments.length : 0;
       
       return {
         month,
+        shortMonth: month.substring(0, 3), // Kısa ay adları
         shipments: monthShipments.length,
-        shipping_cost: totalCost
+        shipping_cost: totalCost,
+        avg_cost: avgCost
       };
     });
     
-    return data;
+    // Only return last 6 months for better visualization
+    const currentMonth = new Date().getMonth();
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      last6Months.push(data[monthIndex]);
+    }
+    
+    return last6Months;
   }, [shipments]);
 
   // Carrier distribution data
@@ -378,85 +388,128 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Monthly Shipments Chart */}
+      {/* Charts Section - Enhanced */}
+      <div className="space-y-8">
+        {/* Top Row - Dual Chart (Shipments & Cost Combined) */}
         <div className="card">
-          <h3 className="card-title mb-4">Aylık Sevkiyat Dağılımı</h3>
-          <div className="h-80">
+          <div className="border-b border-gray-200 pb-4 mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Aylık Performans Özeti</h3>
+            <p className="text-sm text-gray-500 mt-1">Son 6 ayın sevkiyat ve maliyet trendi</p>
+          </div>
+          <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="shipments" fill="#3B82F6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis 
+                  dataKey="shortMonth" 
+                  tick={{ fill: '#6B7280' }}
+                  axisLine={{ stroke: '#9CA3AF' }}
+                />
+                <YAxis 
+                  yAxisId="left"
+                  tick={{ fill: '#6B7280' }}
+                  axisLine={{ stroke: '#9CA3AF' }}
+                  label={{ value: 'Sevkiyat Sayısı', angle: -90, position: 'insideLeft', fill: '#6B7280' }}
+                />
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fill: '#6B7280' }}
+                  axisLine={{ stroke: '#9CA3AF' }}
+                  label={{ value: 'Maliyet ($)', angle: 90, position: 'insideRight', fill: '#6B7280' }}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                  formatter={(value: any, name: string) => {
+                    if (name === 'shipping_cost') return [`$${value.toFixed(2)}`, 'Toplam Maliyet'];
+                    if (name === 'shipments') return [value, 'Sevkiyat Sayısı'];
+                    if (name === 'quantity') return [value, 'Toplam Adet'];
+                    return [value, name];
+                  }}
+                />
+                <Bar yAxisId="left" dataKey="shipments" fill="#3B82F6" name="Sevkiyat Sayısı" radius={[8, 8, 0, 0]} />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="shipping_cost" 
+                  stroke="#10B981" 
+                  strokeWidth={3}
+                  name="Toplam Maliyet"
+                  dot={{ fill: '#10B981', r: 5 }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Monthly Cost Trend */}
-        <div className="card">
-          <h3 className="card-title mb-4">Aylık Kargo Maliyeti Trendi</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'Maliyet']} />
-                <Line type="monotone" dataKey="shipping_cost" stroke="#10B981" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Carrier Distribution */}
-        <div className="card">
-          <h3 className="card-title mb-4">Kargo Firması Dağılımı</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={carrierData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {carrierData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Carrier Performance Table */}
-        <div className="card">
-          <h3 className="card-title mb-4">Kargo Firması Performansı</h3>
-          <div className="space-y-3">
-            {carrierData.map((carrier, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                  ></div>
-                  <span className="font-medium">{carrier.name}</span>
+        {/* Bottom Row - Carrier Distribution */}
+        <div className="grid grid-cols-1 gap-8">
+          {/* Carrier Distribution - Combined */}
+          <div className="card">
+            <div className="border-b border-gray-200 pb-4 mb-6">
+              <h3 className="text-lg font-bold text-gray-900">Kargo Firması Performansı</h3>
+              <p className="text-sm text-gray-500 mt-1">Firma bazlı dağılım ve toplam maliyetler</p>
+            </div>
+            
+            {carrierData.length > 0 ? (
+              <>
+                {/* Pie Chart */}
+                <div className="h-64 mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={carrierData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percentage }) => `${name} (${percentage.toFixed(0)}%)`}
+                        outerRadius={90}
+                        fill="#8884d8"
+                        dataKey="count"
+                      >
+                        {carrierData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                        formatter={(value: any, _name: string, props: any) => [
+                          `${value} sevkiyat - $${props.payload.totalCost.toFixed(2)}`,
+                          props.payload.name
+                        ]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold">{carrier.count} sevkiyat</div>
-                  <div className="text-sm text-gray-500">{carrier.percentage.toFixed(1)}%</div>
+                
+                {/* Performance Table */}
+                <div className="space-y-2">
+                  {carrierData.map((carrier, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <div 
+                          className="w-4 h-4 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        ></div>
+                        <span className="font-medium text-gray-900">{carrier.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-4 text-sm">
+                        <span className="text-gray-600">{carrier.count} sevkiyat</span>
+                        <span className="text-gray-500">{carrier.percentage.toFixed(1)}%</span>
+                        <span className="font-bold text-gray-900">${carrier.totalCost.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-80 flex items-center justify-center text-gray-400">
+                <div className="text-center">
+                  <span className="text-4xl block mb-2">📦</span>
+                  <p>Henüz kargo verisi yok</p>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
