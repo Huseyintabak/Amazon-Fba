@@ -71,12 +71,6 @@ const ResizableTable: React.FC<ResizableTableProps> = ({ children, className = '
     localStorage.setItem('products-table-widths', JSON.stringify(columnWidths));
   }, [columnWidths]);
 
-  const getColumnStyle = (columnKey: string) => ({
-    width: `${columnWidths[columnKey]}px`,
-    minWidth: `${columnWidths[columnKey]}px`,
-    maxWidth: `${columnWidths[columnKey]}px`,
-  });
-
   // Add resize handles to table headers
   useEffect(() => {
     if (tableRef.current) {
@@ -110,7 +104,7 @@ const ResizableTable: React.FC<ResizableTableProps> = ({ children, className = '
             transition: all 0.2s ease;
           `;
           resizeHandle.title = 'Sürükleyerek genişlik ayarla';
-          resizeHandle.addEventListener('mousedown', (e) => handleMouseDown(columnKey, e));
+          resizeHandle.addEventListener('mousedown', (e) => handleMouseDown(columnKey, e as any));
           
           // Make header relative positioned
           (header as HTMLElement).style.position = 'relative';
@@ -143,7 +137,6 @@ const ResizableTable: React.FC<ResizableTableProps> = ({ children, className = '
       // Apply to body cells
       const bodyCells = tableRef.current.querySelectorAll('tbody td');
       bodyCells.forEach((cell, index) => {
-        const rowIndex = Math.floor(index / columnKeys.length);
         const colIndex = index % columnKeys.length;
         if (colIndex < columnKeys.length) {
           const columnKey = columnKeys[colIndex];
