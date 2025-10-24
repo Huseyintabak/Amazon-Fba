@@ -334,7 +334,7 @@ const Pricing: React.FC = () => {
                     )}
                     {isCurrentPlan && (
                       <span className="px-4 py-2 bg-green-500 text-white text-sm font-bold rounded-full shadow-lg">
-                        Mevcut Plan
+                        {plan.name === 'Free' ? 'Ücretsiz Plan' : 'Mevcut Plan'}
                       </span>
                     )}
                   </div>
