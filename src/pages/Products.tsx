@@ -15,7 +15,7 @@ import BulkOperations from '../components/BulkOperations';
 import ProductPerformanceAnalyzer from '../components/ProductPerformanceAnalyzer';
 import PriceOptimizerButton from '../components/PriceOptimizerButton';
 import ProductLimitBlur from '../components/ProductLimitBlur';
-// import ResizableTable from '../components/ResizableTable';
+import ResizableTable from '../components/ResizableTable';
 import { validateProduct } from '../lib/validation';
 
 const Products: React.FC = () => {
@@ -393,7 +393,8 @@ const Products: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="table min-w-full" style={{ minWidth: '1200px' }}>
+          <ResizableTable>
+            <table className="table min-w-full" style={{ minWidth: '1200px' }}>
             <thead className="table-header">
               <tr>
                 <th className="table-header-cell w-12">
@@ -597,6 +598,7 @@ const Products: React.FC = () => {
               </ProductLimitBlur>
             </tbody>
           </table>
+          </ResizableTable>
         </div>
 
         {/* Pagination */}
