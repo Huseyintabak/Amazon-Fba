@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { supabase } from '../lib/supabase';
 import { useSubscription } from '../hooks/useSubscription';
 import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
 import { useBulkSelection } from '../hooks/useBulkSelection';
@@ -765,6 +766,7 @@ interface ProductModalProps {
 
 const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess }) => {
   const { showToast } = useToast();
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: product?.name || '',
     asin: product?.asin || '',
@@ -784,6 +786,25 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
     notes: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load suppliers on component mount
+  useEffect(() => {
+    const loadSuppliers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('id, name, company, country')
+          .order('name');
+        
+        if (error) throw error;
+        setSuppliers(data || []);
+      } catch (error: any) {
+        console.error('Tedarikçiler yüklenemedi:', error.message);
+      }
+    };
+
+    loadSuppliers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -878,14 +899,26 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
             </div>
 
             <div>
-              <label className="label">Tedarikçi Adı</label>
-              <input
-                type="text"
+              <label className="label">Tedarikçi</label>
+              <select
                 value={formData.supplier_name}
-                onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
+                onChange={(e) => {
+                  const selectedSupplier = suppliers.find(s => s.name === e.target.value);
+                  setFormData({ 
+                    ...formData, 
+                    supplier_name: e.target.value,
+                    supplier_country: selectedSupplier?.country || ''
+                  });
+                }}
                 className="input-field"
-                placeholder="Tedarikçi adı"
-              />
+              >
+                <option value="">Tedarikçi seçin</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.name}>
+                    {supplier.name} {supplier.company && `(${supplier.company})`}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -895,7 +928,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                 value={formData.supplier_country}
                 onChange={(e) => setFormData({ ...formData, supplier_country: e.target.value })}
                 className="input-field"
-                placeholder="Türkiye"
+                placeholder="Tedarikçi seçildiğinde otomatik doldurulur"
+                readOnly
               />
             </div>
 
