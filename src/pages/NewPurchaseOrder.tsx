@@ -57,12 +57,19 @@ const NewPurchaseOrder: React.FC = () => {
     }
   };
 
-  const loadProducts = async () => {
+  const loadProducts = async (supplierId?: string) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
-        .select('id, name, merchant_sku, product_cost')
+        .select('id, name, merchant_sku, product_cost, supplier_id')
         .order('name');
+      
+      // Filter by supplier if provided
+      if (supplierId) {
+        query = query.eq('supplier_id', supplierId);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       setProducts((data || []) as Product[]);
@@ -88,6 +95,14 @@ const NewPurchaseOrder: React.FC = () => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
+  };
+
+  const handleSupplierChange = (supplierId: string) => {
+    setFormData({ ...formData, supplier_id: supplierId });
+    // Load products for selected supplier
+    loadProducts(supplierId);
+    // Clear existing items when supplier changes
+    setItems([]);
   };
 
   const selectProduct = (index: number, productId: string) => {
@@ -166,7 +181,7 @@ const NewPurchaseOrder: React.FC = () => {
               <label className="label required">Tedarikçi</label>
               <select
                 value={formData.supplier_id}
-                onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                onChange={(e) => handleSupplierChange(e.target.value)}
                 className="input-field"
                 required
               >
@@ -259,7 +274,12 @@ const NewPurchaseOrder: React.FC = () => {
             <button
               type="button"
               onClick={addItem}
-              className="btn-primary text-sm"
+              className={`text-sm ${!formData.supplier_id 
+                ? 'btn-secondary cursor-not-allowed opacity-50' 
+                : 'btn-primary'
+              }`}
+              disabled={!formData.supplier_id}
+              title={!formData.supplier_id ? 'Önce tedarikçi seçin' : ''}
             >
               ➕ Ürün Ekle
             </button>
@@ -267,7 +287,17 @@ const NewPurchaseOrder: React.FC = () => {
 
           {items.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              Henüz ürün eklenmedi. "Ürün Ekle" butonuna tıklayın.
+              {!formData.supplier_id ? (
+                <div>
+                  <p className="text-lg mb-2">📋 Önce tedarikçi seçin</p>
+                  <p className="text-sm">Tedarikçi seçtikten sonra o tedarikçiye ait ürünler listelenecek</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-lg mb-2">Henüz ürün eklenmedi</p>
+                  <p className="text-sm">"Ürün Ekle" butonuna tıklayın</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -280,8 +310,14 @@ const NewPurchaseOrder: React.FC = () => {
                         value={item.product_id || ''}
                         onChange={(e) => selectProduct(index, e.target.value)}
                         className="input-field text-sm"
+                        disabled={!formData.supplier_id}
                       >
-                        <option value="">Manuel gir veya seç</option>
+                        <option value="">
+                          {!formData.supplier_id 
+                            ? "Önce tedarikçi seçin" 
+                            : "Manuel gir veya seç"
+                          }
+                        </option>
                         {products.map(p => (
                           <option key={p.id} value={p.id}>
                             {p.name} ({p.merchant_sku})
