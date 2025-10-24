@@ -190,6 +190,7 @@ const Products: React.FC = () => {
         updateProduct(product.id, updates)
       );
       await Promise.all(promises);
+      await loadProducts(); // Auto-refresh after bulk edit
       showToast(`${selectedProducts.length} ürün güncellendi`, 'success');
       bulkSelection.clearSelection();
     } catch (error: any) {
@@ -209,6 +210,7 @@ const Products: React.FC = () => {
         deleteProduct(product.id)
       );
       await Promise.all(promises);
+      await loadProducts(); // Auto-refresh after bulk delete
       showToast(`${selectedProducts.length} ürün silindi`, 'success');
       bulkSelection.clearSelection();
     } catch (error: any) {
