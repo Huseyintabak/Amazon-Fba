@@ -43,6 +43,52 @@ export const downloadCSV = (csvContent: string, filename: string): void => {
 };
 
 /**
+ * Export products for update (CSV format compatible with import)
+ */
+export const exportProductsForUpdate = (products: any[]): void => {
+  const headers = [
+    'Ürün Adı',
+    'ASIN',
+    'Merchant SKU',
+    'Üretici',
+    'Üretici Kodu',
+    'Amazon Barkod',
+    'Ürün Maliyeti',
+    'Tedarikçi Adı',
+    'Tedarikçi Ülkesi',
+    'Amazon Fiyatı',
+    'Referans Ücreti',
+    'Fulfillment Ücreti',
+    'Reklam Maliyeti',
+    'İlk Yatırım',
+    'Notlar'
+  ];
+  
+  const csvData = products.map(product => ({
+    'Ürün Adı': product.name || '',
+    'ASIN': product.asin || '',
+    'Merchant SKU': product.merchant_sku || '',
+    'Üretici': product.manufacturer || '',
+    'Üretici Kodu': product.manufacturer_code || '',
+    'Amazon Barkod': product.amazon_barcode || '',
+    'Ürün Maliyeti': product.product_cost || '',
+    'Tedarikçi Adı': product.supplier_name || '',
+    'Tedarikçi Ülkesi': product.supplier_country || '',
+    'Amazon Fiyatı': product.amazon_price || '',
+    'Referans Ücreti': product.referral_fee_percent || '',
+    'Fulfillment Ücreti': product.fulfillment_fee || '',
+    'Reklam Maliyeti': product.advertising_cost || '',
+    'İlk Yatırım': product.initial_investment || '',
+    'Notlar': product.notes || ''
+  }));
+  
+  const csvContent = convertToCSV(csvData, headers);
+  const filename = `urunler-guncelleme-${new Date().toISOString().split('T')[0]}.csv`;
+  
+  downloadCSV(csvContent, filename);
+};
+
+/**
  * Export product report to CSV
  */
 export const exportProductReport = (products: any[]): void => {

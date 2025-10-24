@@ -8,6 +8,7 @@ import { useBulkSelection } from '../hooks/useBulkSelection';
 // import { useFilterPresets } from '../hooks/useFilterPresets';
 import { Product } from '../types';
 import { processCSVFile, getCSVTemplate } from '../lib/csvImport';
+import { exportProductsForUpdate } from '../lib/csvExport';
 import { AdvancedFilters } from '../components/AdvancedFiltersPanel';
 import UsageBanner from '../components/UsageBanner';
 import UpgradeModal from '../components/UpgradeModal';
@@ -730,6 +731,9 @@ const Products: React.FC = () => {
                     <div>
                       <div className="font-medium text-gray-900">Mevcut Ürünleri Güncelle</div>
                       <div className="text-sm text-gray-600">ASIN/SKU ile eşleşen ürünleri günceller</div>
+                      <div className="text-xs text-orange-600 mt-1">
+                        💡 Önce "Mevcut Ürünleri Export Et" ile CSV indirin, düzenleyin, sonra import edin
+                      </div>
                     </div>
                   </label>
                 </div>
@@ -793,6 +797,13 @@ const Products: React.FC = () => {
                 >
                   <span>📥</span>
                   <span>Template İndir</span>
+                </button>
+                <button
+                  onClick={() => exportProductsForUpdate(products)}
+                  className="btn-primary flex items-center space-x-2"
+                >
+                  <span>📤</span>
+                  <span>Mevcut Ürünleri Export Et</span>
                 </button>
               </div>
 
