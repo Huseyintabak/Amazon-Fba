@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import AIInsights from '../components/AIInsights';
 import AIInsightsHub from '../components/AIInsightsHub';
+import PremiumBlur from '../components/PremiumBlur';
 
 const AIHub: React.FC = () => {
   const { products, shipments } = useSupabaseStore();
@@ -18,29 +19,34 @@ const AIHub: React.FC = () => {
   }, [products]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
-          <span className="text-4xl">🤖</span>
-          <span>AI Hub</span>
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Yapay zeka destekli iş analizleri, öneriler ve tahminler
-        </p>
-        <div className="mt-4 flex items-center space-x-2">
-          <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
-            Powered by GPT-4o-mini
-          </span>
-          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full flex items-center">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-            AI Aktif
-          </span>
+    <PremiumBlur 
+      featureName="AI Hub" 
+      description="AI Hub, gelişmiş AI analizleri ve önerileri için Pro plan gerektirir."
+      allowedFeatures={['ai-chat']}
+    >
+      <div className="min-h-screen bg-gray-50 p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
+            <span className="text-4xl">🤖</span>
+            <span>AI Hub</span>
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Yapay zeka destekli iş analizleri, öneriler ve tahminler
+          </p>
+          <div className="mt-4 flex items-center space-x-2">
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+              Powered by GPT-4o-mini
+            </span>
+            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+              AI Aktif
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* AI Features Grid */}
-      <div className="space-y-6">
+        {/* AI Features Grid */}
+        <div className="space-y-6">
         {/* Quick AI Insights */}
         <AIInsights
           products={products}
@@ -181,8 +187,11 @@ const AIHub: React.FC = () => {
 
       {/* Note: AI Chat Assistant is now globally available via Layout component */}
     </div>
+    </PremiumBlur>
   );
 };
 
 export default AIHub;
+
+
 

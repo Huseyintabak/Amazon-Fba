@@ -3,6 +3,7 @@ import { useToast } from '../contexts/ToastContext';
 import { Supplier } from '../types';
 import { supabase } from '../lib/supabase';
 import SupplierPerformance from '../components/SupplierPerformance';
+import PremiumBlur from '../components/PremiumBlur';
 
 const Suppliers: React.FC = () => {
   const { showToast } = useToast();
@@ -203,9 +204,15 @@ const Suppliers: React.FC = () => {
         </>
       ) : (
         /* Performance Tab */
-        <div className="card">
-          <SupplierPerformance />
-        </div>
+        <PremiumBlur 
+          featureName="Tedarikçi Performans Analizi" 
+          description="Detaylı tedarikçi performans analizi Pro plan ile kullanılabilir."
+          allowedFeatures={['suppliers']}
+        >
+          <div className="card">
+            <SupplierPerformance />
+          </div>
+        </PremiumBlur>
       )}
 
       {/* Supplier Modal */}

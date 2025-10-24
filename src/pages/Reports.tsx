@@ -20,6 +20,7 @@ import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { supabase } from '../lib/supabase';
 import { CostBreakdown, ROIPerformance } from '../types';
 import DateRangePicker, { DateRange } from '../components/DateRangePicker';
+import PremiumBlur from '../components/PremiumBlur';
 
 const Reports: React.FC = () => {
   const { shipments, loadAllData } = useSupabaseStore();
@@ -231,7 +232,12 @@ const Reports: React.FC = () => {
   }, [costBreakdownData]);
 
   return (
-    <div className="space-y-8">
+    <PremiumBlur 
+      featureName="Gelişmiş Raporlar" 
+      description="Detaylı analizler ve ROI raporları Pro plan ile kullanılabilir."
+      allowedFeatures={['dashboard']}
+    >
+      <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -882,6 +888,7 @@ const Reports: React.FC = () => {
         </>
       )}
     </div>
+    </PremiumBlur>
   );
 };
 
