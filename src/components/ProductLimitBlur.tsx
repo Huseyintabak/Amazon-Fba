@@ -33,9 +33,11 @@ const ProductLimitBlur: React.FC<ProductLimitBlurProps> = ({
         {visibleItems}
 
         {/* Show 11th and 12th items as blur */}
-        <div className="filter blur-sm pointer-events-none select-none" style={{ minWidth: '1200px' }}>
-          {blurItems}
-        </div>
+        {blurItems.map((item, index) => (
+          <tr key={`blur-${index}`} className="filter blur-sm pointer-events-none select-none">
+            {item}
+          </tr>
+        ))}
 
         {/* Modal as 13th item */}
         <tr>
@@ -87,9 +89,11 @@ const ProductLimitBlur: React.FC<ProductLimitBlurProps> = ({
         </tr>
 
         {/* Remaining blurred items */}
-        <div className="filter blur-sm pointer-events-none select-none" style={{ minWidth: '1200px' }}>
-          {remainingBlurItems}
-        </div>
+        {remainingBlurItems.map((item, index) => (
+          <tr key={`remaining-blur-${index}`} className="filter blur-sm pointer-events-none select-none">
+            {item}
+          </tr>
+        ))}
       </>
     );
   }
