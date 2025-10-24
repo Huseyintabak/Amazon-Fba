@@ -33,12 +33,13 @@ const ProductLimitBlur: React.FC<ProductLimitBlurProps> = ({
         {visibleItems}
 
         {/* Show 11th and 12th items as blur */}
-        {blurItems.map((item, index) => (
-          <React.cloneElement(item as React.ReactElement, {
+        {blurItems.map((item, index) => {
+          const element = item as React.ReactElement;
+          return React.cloneElement(element, {
             key: `blur-${index}`,
-            className: `${(item as React.ReactElement).props.className || ''} filter blur-sm pointer-events-none select-none`
-          })
-        )}
+            className: `${element.props.className || ''} filter blur-sm pointer-events-none select-none`
+          });
+        })}
 
         {/* Modal as 13th item */}
         <tr>
@@ -90,12 +91,13 @@ const ProductLimitBlur: React.FC<ProductLimitBlurProps> = ({
         </tr>
 
         {/* Remaining blurred items */}
-        {remainingBlurItems.map((item, index) => (
-          <React.cloneElement(item as React.ReactElement, {
+        {remainingBlurItems.map((item, index) => {
+          const element = item as React.ReactElement;
+          return React.cloneElement(element, {
             key: `remaining-blur-${index}`,
-            className: `${(item as React.ReactElement).props.className || ''} filter blur-sm pointer-events-none select-none`
-          })
-        )}
+            className: `${element.props.className || ''} filter blur-sm pointer-events-none select-none`
+          });
+        })}
       </>
     );
   }
