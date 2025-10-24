@@ -1,14 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../hooks/useSubscription';
 import { getPlanFeatures } from '../lib/featureGating';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+// Register GSAP plugins
+gsap.registerPlugin(ScrollTrigger);
 
 const Pricing: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { planType, loading } = useSubscription();
   const navigate = useNavigate();
   const [openFAQ, setOpenFAQ] = useState<number | null>(0); // First FAQ open by default
+
+  // FAQ animation handler
+  const handleFAQToggle = (index: number) => {
+    const newOpenFAQ = openFAQ === index ? null : index;
+    setOpenFAQ(newOpenFAQ);
+    
+    // GSAP animation for FAQ content
+    const faqContent = document.querySelector(`[data-faq-index="${index}"] .faq-content`);
+    if (faqContent) {
+      if (newOpenFAQ === index) {
+        gsap.fromTo(faqContent, 
+          { height: 0, opacity: 0 },
+          { height: 'auto', opacity: 1, duration: 0.3, ease: "power2.out" }
+        );
+      } else {
+        gsap.to(faqContent, 
+          { height: 0, opacity: 0, duration: 0.3, ease: "power2.out" }
+        );
+      }
+    }
+  };
+  
+  // GSAP refs
+  const headerRef = useRef<HTMLDivElement>(null);
+  const pricingCardsRef = useRef<HTMLDivElement>(null);
+  const faqRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
 
   const plans = [
     {
@@ -32,6 +64,85 @@ const Pricing: React.FC = () => {
       badge: 'EN POPÜLER',
     },
   ];
+
+  // GSAP Animations
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Initial setup - hide elements
+      gsap.set([headerRef.current, pricingCardsRef.current, faqRef.current, ctaRef.current], {
+        opacity: 0,
+        y: 50
+      });
+
+      // Header animation
+      gsap.to(headerRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        ease: "power3.out"
+      });
+
+      // Pricing cards animation
+      gsap.to(pricingCardsRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        delay: 0.3,
+        ease: "power3.out"
+      });
+
+      // FAQ animation with scroll trigger
+      gsap.to(faqRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        scrollTrigger: {
+          trigger: faqRef.current,
+          start: "top 80%",
+          end: "bottom 20%",
+          toggleActions: "play none none reverse"
+        },
+        ease: "power3.out"
+      });
+
+      // CTA animation with scroll trigger
+      gsap.to(ctaRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        scrollTrigger: {
+          trigger: ctaRef.current,
+          start: "top 80%",
+          end: "bottom 20%",
+          toggleActions: "play none none reverse"
+        },
+        ease: "power3.out"
+      });
+
+      // Pricing cards hover animations
+      const cards = pricingCardsRef.current?.querySelectorAll('.pricing-card');
+      cards?.forEach((card) => {
+        card.addEventListener('mouseenter', () => {
+          gsap.to(card, {
+            scale: 1.05,
+            duration: 0.3,
+            ease: "power2.out"
+          });
+        });
+        
+        card.addEventListener('mouseleave', () => {
+          gsap.to(card, {
+            scale: 1,
+            duration: 0.3,
+            ease: "power2.out"
+          });
+        });
+      });
+
+    });
+
+    return () => ctx.revert();
+  }, []);
 
   const handlePlanSelect = (plan: string) => {
     if (!isAuthenticated) {
@@ -97,10 +208,10 @@ const Pricing: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content with top padding for fixed nav */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-        {/* Header */}
-        <div className="text-center mb-12">
+        {/* Main Content with top padding for fixed nav */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+          {/* Header */}
+          <div ref={headerRef} className="text-center mb-12">
           <div className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-md mb-6">
             <span className="text-2xl">🤖</span>
             <span className="text-sm font-semibold text-gray-700">AI Destekli Amazon FBA Tracker</span>
@@ -116,21 +227,21 @@ const Pricing: React.FC = () => {
           </p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
+          {/* Pricing Cards */}
+          <div ref={pricingCardsRef} className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
           {plans.map((plan) => {
             const isCurrentPlan = planType === plan.name.toLowerCase();
             const isPro = plan.name === 'Pro';
             
             return (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl overflow-hidden ${
-                  plan.highlighted
-                    ? 'shadow-2xl transform hover:scale-105 transition-all duration-300'
-                    : 'shadow-lg hover:shadow-xl transition-all duration-300'
-                }`}
-              >
+                <div
+                  key={plan.name}
+                  className={`pricing-card relative rounded-2xl overflow-hidden ${
+                    plan.highlighted
+                      ? 'shadow-2xl transform hover:scale-105 transition-all duration-300'
+                      : 'shadow-lg hover:shadow-xl transition-all duration-300'
+                  }`}
+                >
                 {/* Gradient Background for Pro */}
                 {isPro && (
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 opacity-95"></div>
@@ -208,16 +319,16 @@ const Pricing: React.FC = () => {
           })}
         </div>
 
-        {/* FAQ Section - Accordion */}
-        <div className="max-w-3xl mx-auto">
+          {/* FAQ Section - Accordion */}
+          <div ref={faqRef} className="max-w-3xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8">
             Sıkça Sorulan Sorular
           </h2>
           <div className="space-y-4">
             {/* FAQ 1 */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
+            <div data-faq-index="0" className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
               <button
-                onClick={() => setOpenFAQ(openFAQ === 0 ? null : 0)}
+                onClick={() => handleFAQToggle(0)}
                 className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
               >
                 <h3 className="font-semibold text-gray-900 pr-4">
@@ -234,11 +345,7 @@ const Pricing: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <div
-                className={`overflow-hidden transition-all duration-300 ${
-                  openFAQ === 0 ? 'max-h-40' : 'max-h-0'
-                }`}
-              >
+              <div className="faq-content overflow-hidden">
                 <p className="px-6 pb-4 text-gray-600">
                   Evet! Free plan ile başlayın, istediğiniz zaman Pro plana geçiş yapın.
                   Kredi kartı bilgisi gerektirmez.
@@ -247,9 +354,9 @@ const Pricing: React.FC = () => {
             </div>
 
             {/* FAQ 2 */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
+            <div data-faq-index="1" className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
               <button
-                onClick={() => setOpenFAQ(openFAQ === 1 ? null : 1)}
+                onClick={() => handleFAQToggle(1)}
                 className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
               >
                 <h3 className="font-semibold text-gray-900 pr-4">
@@ -402,8 +509,8 @@ const Pricing: React.FC = () => {
           </div>
         </div>
 
-        {/* CTA Section */}
-        <div className="text-center mt-12">
+          {/* CTA Section */}
+          <div ref={ctaRef} className="text-center mt-12">
           {!isAuthenticated && (
             <div className="card max-w-2xl mx-auto bg-primary text-white">
               <h3 className="text-2xl font-bold mb-4">
