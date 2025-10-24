@@ -5,10 +5,10 @@ import { supabase } from '../lib/supabase';
 import { useSubscription } from '../hooks/useSubscription';
 import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
 import { useBulkSelection } from '../hooks/useBulkSelection';
-import { useFilterPresets } from '../hooks/useFilterPresets';
+// import { useFilterPresets } from '../hooks/useFilterPresets';
 import { Product } from '../types';
 import { processCSVFile, getCSVTemplate } from '../lib/csvImport';
-import AdvancedFiltersPanel, { AdvancedFilters } from '../components/AdvancedFiltersPanel';
+import { AdvancedFilters } from '../components/AdvancedFiltersPanel';
 import UsageBanner from '../components/UsageBanner';
 import UpgradeModal from '../components/UpgradeModal';
 import BulkOperations from '../components/BulkOperations';
@@ -26,7 +26,7 @@ const Products: React.FC = () => {
   const [upgradeFeature, setUpgradeFeature] = useState<string>('');
   const [upgradeLimitType, setUpgradeLimitType] = useState<string>('');
   const bulkSelection = useBulkSelection<Product>();
-  const { presets, savePreset, deletePreset } = useFilterPresets('products');
+  // const { presets, savePreset, deletePreset } = useFilterPresets('products');
   const [filters, setFilters] = useState<AdvancedFilters>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -166,9 +166,11 @@ const Products: React.FC = () => {
     try {
       if (editingProduct) {
         await updateProduct(editingProduct.id, productData);
+        await loadProducts(); // Sayfayı yenile
         showToast('Ürün başarıyla güncellendi', 'success');
       } else {
         await addProduct(productData as any);
+        await loadProducts(); // Sayfayı yenile
         showToast('Ürün başarıyla eklendi', 'success');
       }
       setShowAddModal(false);
@@ -312,15 +314,26 @@ const Products: React.FC = () => {
         </div>
       </div>
 
-      {/* Advanced Filters */}
-      <AdvancedFiltersPanel
-        filters={filters}
-        onChange={setFilters}
-        savedPresets={presets}
-        onSavePreset={savePreset}
-        onDeletePreset={deletePreset}
-        type="products"
-      />
+      {/* Search Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="relative">
+          <input
+            type="text"
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            placeholder="🔍 Ürün adı, ASIN, Merchant SKU veya tedarikçi adı ile ara..."
+            className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          {filters.search && (
+            <button
+              onClick={() => setFilters({ ...filters, search: '' })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Usage Banner */}
       <UsageBanner />
@@ -817,8 +830,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
         asin: formData.asin || undefined,
         merchant_sku: formData.merchant_sku || undefined,
         amazon_barcode: formData.amazon_barcode || undefined,
-        supplier_name: formData.supplier_name || undefined,
-        supplier_country: formData.supplier_country || undefined,
         manufacturer_code: formData.manufacturer_code || undefined,
         product_cost: formData.product_cost ? parseFloat(formData.product_cost.toString()) : undefined,
         // Premium fields
@@ -827,9 +838,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
         fulfillment_fee: formData.fulfillment_fee ? parseFloat(formData.fulfillment_fee.toString()) : undefined,
         advertising_cost: formData.advertising_cost ? parseFloat(formData.advertising_cost.toString()) : undefined,
         initial_investment: formData.initial_investment ? parseFloat(formData.initial_investment.toString()) : undefined,
+        // Supplier relationship
+        supplier_id: formData.supplier_id || undefined,
       };
 
-      console.log('Product data being sent:', productData);
 
       const validation = validateProduct(productData);
       if (!validation.isValid) {
@@ -905,7 +917,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                 value={formData.supplier_name}
                 onChange={(e) => {
                   const selectedSupplier = suppliers.find(s => s.name === e.target.value);
-                  console.log('Selected supplier:', selectedSupplier);
                   setFormData({ 
                     ...formData, 
                     supplier_name: e.target.value,
