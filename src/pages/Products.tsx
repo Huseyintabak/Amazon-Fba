@@ -818,7 +818,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
         merchant_sku: formData.merchant_sku || undefined,
         amazon_barcode: formData.amazon_barcode || undefined,
         supplier_name: formData.supplier_name || undefined,
-        supplier_id: formData.supplier_id || undefined,
         supplier_country: formData.supplier_country || undefined,
         manufacturer_code: formData.manufacturer_code || undefined,
         product_cost: formData.product_cost ? parseFloat(formData.product_cost.toString()) : undefined,
@@ -829,6 +828,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
         advertising_cost: formData.advertising_cost ? parseFloat(formData.advertising_cost.toString()) : undefined,
         initial_investment: formData.initial_investment ? parseFloat(formData.initial_investment.toString()) : undefined,
       };
+
+      console.log('Product data being sent:', productData);
 
       const validation = validateProduct(productData);
       if (!validation.isValid) {
@@ -904,6 +905,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                 value={formData.supplier_name}
                 onChange={(e) => {
                   const selectedSupplier = suppliers.find(s => s.name === e.target.value);
+                  console.log('Selected supplier:', selectedSupplier);
                   setFormData({ 
                     ...formData, 
                     supplier_name: e.target.value,
