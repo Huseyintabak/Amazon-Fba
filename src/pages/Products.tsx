@@ -774,6 +774,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
     supplier_country: product?.supplier_country || '',
     manufacturer_code: product?.manufacturer_code || '',
     product_cost: product?.product_cost || '',
+    // Premium fields
+    amazon_price: product?.amazon_price || '',
+    referral_fee_percent: product?.referral_fee_percent || '',
+    fulfillment_fee: product?.fulfillment_fee || '',
+    advertising_cost: product?.advertising_cost || '',
+    initial_investment: product?.initial_investment || '',
+    units_sold: product?.units_sold || '',
     notes: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -793,6 +800,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
         supplier_country: formData.supplier_country || undefined,
         manufacturer_code: formData.manufacturer_code || undefined,
         product_cost: formData.product_cost ? parseFloat(formData.product_cost.toString()) : undefined,
+        // Premium fields
+        amazon_price: formData.amazon_price ? parseFloat(formData.amazon_price.toString()) : undefined,
+        referral_fee_percent: formData.referral_fee_percent ? parseFloat(formData.referral_fee_percent.toString()) : undefined,
+        fulfillment_fee: formData.fulfillment_fee ? parseFloat(formData.fulfillment_fee.toString()) : undefined,
+        advertising_cost: formData.advertising_cost ? parseFloat(formData.advertising_cost.toString()) : undefined,
+        initial_investment: formData.initial_investment ? parseFloat(formData.initial_investment.toString()) : undefined,
+        units_sold: formData.units_sold ? parseInt(formData.units_sold.toString()) : undefined,
       };
 
       const validation = validateProduct(productData);
@@ -906,6 +920,99 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                 className="input-field"
                 placeholder="0.00"
               />
+            </div>
+          </div>
+
+          {/* Premium Features Section */}
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="text-2xl">🚀</span>
+              <h4 className="text-lg font-bold text-gray-900">Premium Özellikler</h4>
+              <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded-full">
+                PRO
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="label">Amazon Fiyatı ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.amazon_price}
+                  onChange={(e) => setFormData({ ...formData, amazon_price: e.target.value })}
+                  className="input-field"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="label">Referans Ücreti (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.referral_fee_percent}
+                  onChange={(e) => setFormData({ ...formData, referral_fee_percent: e.target.value })}
+                  className="input-field"
+                  placeholder="15.00"
+                />
+              </div>
+
+              <div>
+                <label className="label">Fulfillment Ücreti ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.fulfillment_fee}
+                  onChange={(e) => setFormData({ ...formData, fulfillment_fee: e.target.value })}
+                  className="input-field"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="label">Reklam Maliyeti ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.advertising_cost}
+                  onChange={(e) => setFormData({ ...formData, advertising_cost: e.target.value })}
+                  className="input-field"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="label">İlk Yatırım ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.initial_investment}
+                  onChange={(e) => setFormData({ ...formData, initial_investment: e.target.value })}
+                  className="input-field"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="label">Satılan Adet</label>
+                <input
+                  type="number"
+                  value={formData.units_sold}
+                  onChange={(e) => setFormData({ ...formData, units_sold: e.target.value })}
+                  className="input-field"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-2 text-sm text-blue-800">
+                <span className="text-lg">💡</span>
+                <span>
+                  <strong>Pro özellik:</strong> Bu alanlar otomatik kar hesaplama ve ROI analizi için kullanılır.
+                </span>
+              </div>
             </div>
           </div>
 
