@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useSubscription } from '../hooks/useSubscription';
+import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
 import { useBulkSelection } from '../hooks/useBulkSelection';
 import { useFilterPresets } from '../hooks/useFilterPresets';
 import { Product } from '../types';
@@ -20,6 +21,7 @@ const Products: React.FC = () => {
   const { showToast } = useToast();
   const { products, addProduct, updateProduct, deleteProduct, loadProducts } = useSupabaseStore();
   const { canCreateProduct, hasFeature } = useSubscription();
+  const { redirectToUpgrade, isFreeUser } = useUpgradeRedirect();
   const bulkSelection = useBulkSelection<Product>();
   const { presets, savePreset, deletePreset } = useFilterPresets('products');
   const [filters, setFilters] = useState<AdvancedFilters>({});
@@ -376,11 +378,16 @@ const Products: React.FC = () => {
             <span>Yeni Ürün Ekle</span>
           </button>
           <button
-            onClick={handleImport}
+            onClick={() => redirectToUpgrade('CSV İçe Aktar')}
             className="btn-success flex items-center space-x-2"
           >
             <span>📥</span>
             <span>CSV İçe Aktar</span>
+            {isFreeUser && (
+              <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                🔒 Pro
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -796,14 +803,33 @@ const Products: React.FC = () => {
       />
 
       {/* Bulk Operations */}
-      <BulkOperations
-        selectedCount={bulkSelection.selectedCount}
-        selectedItems={bulkSelection.selectedItems}
-        allItems={products}
-        onBulkEdit={handleBulkEdit}
-        onBulkDelete={handleBulkDelete}
-        onClearSelection={bulkSelection.clearSelection}
-      />
+      {isFreeUser ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">⚡</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Toplu İşlemler</h3>
+            <p className="text-gray-600 mb-4">Çoklu ürün düzenleme, silme ve dışa aktarma</p>
+            <button
+              onClick={() => redirectToUpgrade('Toplu İşlemler')}
+              className="btn-primary flex items-center space-x-2 mx-auto"
+            >
+              <span>🔒</span>
+              <span>Pro ile Kullan</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <BulkOperations
+          selectedCount={bulkSelection.selectedCount}
+          selectedItems={bulkSelection.selectedItems}
+          allItems={products}
+          onBulkEdit={handleBulkEdit}
+          onBulkDelete={handleBulkDelete}
+          onClearSelection={bulkSelection.clearSelection}
+        />
+      )}
     </div>
   );
 };

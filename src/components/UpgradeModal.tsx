@@ -38,8 +38,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
         return 'Free planda ayda maksimum 5 sevkiyat oluşturabilirsiniz. Sınırsız sevkiyat için Pro plana yükseltin.';
       default:
         return feature
-          ? `${feature} özelliği Pro plan ile kullanılabilir.`
-          : 'Bu özellik Pro plan ile kullanılabilir.';
+          ? `${feature} özelliği Pro plan ile kullanılabilir. Premium özelliklerimizi keşfedin!`
+          : 'Bu özellik Pro plan ile kullanılabilir. Premium özelliklerimizi keşfedin!';
     }
   };
 

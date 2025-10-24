@@ -11,11 +11,13 @@ import {
 } from 'recharts';
 import { useSupabaseStore } from '../stores/useSupabaseStore';
 import { useAuth } from '../contexts/AuthContext';
+import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
 import WelcomeModal from '../components/WelcomeModal';
 
 const Dashboard: React.FC = () => {
   const { products, shipments, loadAllData } = useSupabaseStore();
   const { user, profile } = useAuth();
+  const { redirectToUpgrade, isFreeUser } = useUpgradeRedirect();
   const [showWelcome, setShowWelcome] = useState(false);
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
   const [roiSummary, setROISummary] = useState({ totalProfit: 0, avgROI: 0, topProduct: '' });
@@ -460,18 +462,27 @@ const Dashboard: React.FC = () => {
                 </div>
               </Link>
 
-              <Link
-                to="/reports"
-                className="group relative bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 p-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
+              <div
+                onClick={() => redirectToUpgrade('Gelişmiş Raporlar')}
+                className="group relative bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 p-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg cursor-pointer"
               >
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-sm">
                     <span className="text-3xl">📊</span>
                   </div>
                   <h4 className="font-bold text-gray-900 mb-1">Raporlar</h4>
-                  <p className="text-xs text-gray-600">Analiz görüntüle</p>
+                  <p className="text-xs text-gray-600">
+                    {isFreeUser ? 'Pro özellik' : 'Analiz görüntüle'}
+                  </p>
+                  {isFreeUser && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        🔒 Pro
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </Link>
+              </div>
             </div>
           </div>
 
