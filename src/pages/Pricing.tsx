@@ -223,7 +223,7 @@ const Pricing: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+    <div className="min-h-screen bg-gray-50 overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden">
         <div className="floating-element absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -232,14 +232,14 @@ const Pricing: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 bg-black/20 backdrop-blur-lg border-b border-white/10">
+      <nav className="relative z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <Link to="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-2xl">🚚</span>
               </div>
-              <span className="text-xl font-bold text-white">FBA Tracker</span>
+              <span className="text-xl font-bold text-gray-900">FBA Tracker</span>
             </Link>
 
             <div className="flex items-center space-x-4">
@@ -247,13 +247,13 @@ const Pricing: React.FC = () => {
                 <>
                   <Link
                     to="/dashboard"
-                    className="text-gray-300 hover:text-white transition-colors font-medium"
+                    className="text-gray-600 hover:text-gray-900 transition-colors font-medium"
                   >
                     Dashboard
                   </Link>
                   <Link
                     to="/profile"
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                    className="btn-primary"
                   >
                     Profile
                   </Link>
@@ -262,13 +262,13 @@ const Pricing: React.FC = () => {
                 <>
                   <Link
                     to="/login"
-                    className="text-gray-300 hover:text-white transition-colors font-medium"
+                    className="text-gray-600 hover:text-gray-900 transition-colors font-medium"
                   >
                     Giriş
                   </Link>
                   <Link
                     to="/signup"
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                    className="btn-primary"
                   >
                     Kayıt Ol
                   </Link>
@@ -282,24 +282,24 @@ const Pricing: React.FC = () => {
       {/* Hero Section */}
       <div ref={heroRef} className="relative z-10 text-center py-20 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-lg px-6 py-3 rounded-full mb-8">
+          <div className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-full mb-8 shadow-sm border border-gray-200">
             <span className="text-3xl">🤖</span>
-            <span className="text-lg font-semibold text-white">AI Destekli Amazon FBA Tracker</span>
-            <span className="px-3 py-1 bg-gradient-to-r from-green-400 to-blue-500 text-white text-sm font-bold rounded-full">YENİ</span>
+            <span className="text-lg font-semibold text-gray-900">AI Destekli Amazon FBA Tracker</span>
+            <span className="px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-full">YENİ</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
             Basit ve
             <br />
-            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
+            <span className="text-primary">
               Şeffaf Fiyatlandırma
             </span>
           </h1>
           
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed mb-8">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
             İhtiyacınıza uygun planı seçin. İstediğiniz zaman yükseltin veya iptal edin.
             <br />
-            <span className="text-purple-300 font-semibold">Pro plan ile AI özelliklerine sınırsız erişim!</span>
+            <span className="text-primary font-semibold">Pro plan ile AI özelliklerine sınırsız erişim!</span>
           </p>
         </div>
       </div>
@@ -386,10 +386,10 @@ const Pricing: React.FC = () => {
       {/* Features Section */}
       <div ref={featuresRef} className="relative z-10 py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
             Neden FBA Tracker?
           </h2>
-          <p className="text-xl text-gray-300 mb-16 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 mb-16 max-w-3xl mx-auto">
             Amazon FBA işinizi büyütmek için ihtiyacınız olan tüm araçlar tek yerde
           </p>
           
@@ -399,10 +399,10 @@ const Pricing: React.FC = () => {
               { icon: '📊', title: 'Detaylı Analiz', desc: 'Kapsamlı raporlar ve grafikler' },
               { icon: '⚡', title: 'Hızlı & Güvenli', desc: 'Gerçek zamanlı güncellemeler' }
             ].map((feature, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+              <div key={index} className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
                 <div className="text-5xl mb-4">{feature.icon}</div>
-                <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
-                <p className="text-gray-300">{feature.desc}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">{feature.title}</h3>
+                <p className="text-gray-600">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -412,7 +412,7 @@ const Pricing: React.FC = () => {
       {/* FAQ Section */}
       <div ref={faqRef} className="relative z-10 py-20 px-4">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-white text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 text-center mb-16">
             Sıkça Sorulan Sorular
           </h2>
           
@@ -435,14 +435,14 @@ const Pricing: React.FC = () => {
                 a: "İstediğiniz zaman iptal edebilirsiniz. Ödeme döneminin sonuna kadar Pro özelliklere erişiminiz devam eder."
               }
             ].map((faq, index) => (
-              <div key={index} data-faq-index={index} className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 overflow-hidden">
+              <div key={index} data-faq-index={index} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                 <button
                   onClick={() => handleFAQToggle(index)}
-                  className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                  className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                 >
-                  <h3 className="text-xl font-semibold text-white pr-4">{faq.q}</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 pr-4">{faq.q}</h3>
                   <svg
-                    className={`w-6 h-6 text-white transform transition-transform duration-300 flex-shrink-0 ${
+                    className={`w-6 h-6 text-gray-600 transform transition-transform duration-300 flex-shrink-0 ${
                       openFAQ === index ? 'rotate-180' : ''
                     }`}
                     fill="none"
@@ -453,7 +453,7 @@ const Pricing: React.FC = () => {
                   </svg>
                 </button>
                 <div className="faq-content overflow-hidden">
-                  <p className="px-8 pb-6 text-gray-300 text-lg">{faq.a}</p>
+                  <p className="px-8 pb-6 text-gray-600 text-lg">{faq.a}</p>
                 </div>
               </div>
             ))}
@@ -465,7 +465,7 @@ const Pricing: React.FC = () => {
       <div ref={ctaRef} className="relative z-10 py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           {!isAuthenticated && (
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl p-12 shadow-2xl">
+            <div className="bg-primary rounded-3xl p-12 shadow-2xl">
               <h3 className="text-4xl font-bold text-white mb-6">
                 Hemen Başlayın
               </h3>
@@ -475,7 +475,7 @@ const Pricing: React.FC = () => {
               </p>
               <Link
                 to="/signup"
-                className="inline-block bg-white text-purple-600 px-12 py-4 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all transform hover:scale-105 shadow-2xl"
+                className="inline-block bg-white text-primary px-12 py-4 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all transform hover:scale-105 shadow-2xl"
               >
                 🚀 Ücretsiz Kayıt Ol
               </Link>
