@@ -15,7 +15,7 @@ import BulkOperations from '../components/BulkOperations';
 import ProductPerformanceAnalyzer from '../components/ProductPerformanceAnalyzer';
 import PriceOptimizerButton from '../components/PriceOptimizerButton';
 import ProductLimitBlur from '../components/ProductLimitBlur';
-import ResizableTable from '../components/ResizableTable';
+// import ResizableTable from '../components/ResizableTable';
 import { validateProduct } from '../lib/validation';
 
 const Products: React.FC = () => {
@@ -393,8 +393,7 @@ const Products: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-        <ResizableTable>
-            <table className="table min-w-full" style={{ minWidth: '1200px' }}>
+          <table className="table min-w-full" style={{ minWidth: '1200px' }}>
             <thead className="table-header">
               <tr>
                 <th className="table-header-cell w-12">
@@ -406,7 +405,7 @@ const Products: React.FC = () => {
                     title="Tümünü seç/kaldır"
                   />
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '150px', maxWidth: '150px' }}>
+                <th className="table-header-cell" style={{ minWidth: '200px', maxWidth: '200px' }}>
                   <button
                     onClick={() => handleSort('name')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -442,7 +441,7 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('supplier_name')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
+                <th className="table-header-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
                   <button
                     onClick={() => handleSort('product_cost')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -496,7 +495,7 @@ const Products: React.FC = () => {
                         className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                       />
                     </td>
-                    <td className="table-cell" style={{ minWidth: '150px', maxWidth: '150px' }}>
+                    <td className="table-cell" style={{ minWidth: '200px', maxWidth: '200px' }}>
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-gray-900 truncate text-sm" title={product.name}>
                           {product.name}
@@ -534,7 +533,7 @@ const Products: React.FC = () => {
                         <span className="text-xs text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="table-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
+                    <td className="table-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
                       {product.product_cost ? (
                         <span className="font-semibold text-green-600">
                           ${product.product_cost.toFixed(2)}
@@ -598,7 +597,6 @@ const Products: React.FC = () => {
               </ProductLimitBlur>
             </tbody>
           </table>
-          </ResizableTable>
         </div>
 
         {/* Pagination */}

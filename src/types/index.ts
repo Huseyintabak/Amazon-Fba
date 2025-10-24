@@ -24,6 +24,8 @@ export interface Product {
   supplier_name?: string;
   supplier_company?: string;
   supplier_country?: string;
+  // Notes
+  notes?: string;
   created_at: string;
   updated_at?: string;
 }
