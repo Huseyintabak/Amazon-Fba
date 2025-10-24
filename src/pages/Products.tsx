@@ -773,6 +773,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
     merchant_sku: product?.merchant_sku || '',
     amazon_barcode: product?.amazon_barcode || '',
     supplier_name: product?.supplier_name || '',
+    supplier_id: product?.supplier_id || '',
     supplier_country: product?.supplier_country || '',
     manufacturer_code: product?.manufacturer_code || '',
     product_cost: product?.product_cost || '',
@@ -817,6 +818,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
         merchant_sku: formData.merchant_sku || undefined,
         amazon_barcode: formData.amazon_barcode || undefined,
         supplier_name: formData.supplier_name || undefined,
+        supplier_id: formData.supplier_id || undefined,
         supplier_country: formData.supplier_country || undefined,
         manufacturer_code: formData.manufacturer_code || undefined,
         product_cost: formData.product_cost ? parseFloat(formData.product_cost.toString()) : undefined,
@@ -905,6 +907,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                   setFormData({ 
                     ...formData, 
                     supplier_name: e.target.value,
+                    supplier_id: selectedSupplier?.id || undefined,
                     supplier_country: selectedSupplier?.country || ''
                   });
                 }}
