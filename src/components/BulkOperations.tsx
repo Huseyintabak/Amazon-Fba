@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface BulkOperationsProps {
   selectedCount: number;
@@ -107,6 +108,26 @@ interface BulkEditModalProps {
 const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedProducts, onClose, onConfirm }) => {
   const [updates, setUpdates] = useState<Partial<Product>>({});
   const [fieldsToUpdate, setFieldsToUpdate] = useState<Set<string>>(new Set());
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+
+  // Load suppliers on component mount
+  useEffect(() => {
+    const loadSuppliers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('id, name, company_name, country')
+          .order('name');
+        
+        if (error) throw error;
+        setSuppliers(data || []);
+      } catch (error: any) {
+        console.error('Tedarikçiler yüklenemedi:', error.message);
+      }
+    };
+
+    loadSuppliers();
+  }, []);
 
   const toggleField = (field: string) => {
     setFieldsToUpdate(prev => {
@@ -153,6 +174,55 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedProducts, onClose
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Amazon Barcode */}
+          <div className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
+            <label className="flex items-center space-x-3 mb-3">
+              <input
+                type="checkbox"
+                checked={fieldsToUpdate.has('amazon_barcode')}
+                onChange={() => toggleField('amazon_barcode')}
+                className="w-5 h-5 text-blue-600"
+              />
+              <span className="font-medium text-gray-900">Amazon Barkod</span>
+            </label>
+            {fieldsToUpdate.has('amazon_barcode') && (
+              <input
+                type="text"
+                value={updates.amazon_barcode || ''}
+                onChange={(e) => setUpdates({ ...updates, amazon_barcode: e.target.value })}
+                className="input-field"
+                placeholder="B08QCQYPFX"
+              />
+            )}
+          </div>
+
+          {/* Supplier */}
+          <div className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
+            <label className="flex items-center space-x-3 mb-3">
+              <input
+                type="checkbox"
+                checked={fieldsToUpdate.has('supplier_id')}
+                onChange={() => toggleField('supplier_id')}
+                className="w-5 h-5 text-blue-600"
+              />
+              <span className="font-medium text-gray-900">Tedarikçi</span>
+            </label>
+            {fieldsToUpdate.has('supplier_id') && (
+              <select
+                value={updates.supplier_id || ''}
+                onChange={(e) => setUpdates({ ...updates, supplier_id: e.target.value })}
+                className="input-field"
+              >
+                <option value="">Tedarikçi seçin</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name} {supplier.company_name && `(${supplier.company_name})`}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
           {/* Manufacturer Code */}
           <div className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
             <label className="flex items-center space-x-3 mb-3">
@@ -170,7 +240,7 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedProducts, onClose
                 value={updates.manufacturer_code || ''}
                 onChange={(e) => setUpdates({ ...updates, manufacturer_code: e.target.value })}
                 className="input-field"
-                placeholder="Üretici kodu"
+                placeholder="MFG-123"
               />
             )}
           </div>
@@ -292,6 +362,52 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedProducts, onClose
                 onChange={(e) => setUpdates({ ...updates, advertising_cost: parseFloat(e.target.value) || 0 })}
                 className="input-field"
                 placeholder="0.00"
+              />
+            )}
+          </div>
+
+          {/* Initial Investment */}
+          <div className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
+            <label className="flex items-center space-x-3 mb-3">
+              <input
+                type="checkbox"
+                checked={fieldsToUpdate.has('initial_investment')}
+                onChange={() => toggleField('initial_investment')}
+                className="w-5 h-5 text-blue-600"
+              />
+              <span className="font-medium text-gray-900">İlk Yatırım ($)</span>
+            </label>
+            {fieldsToUpdate.has('initial_investment') && (
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={updates.initial_investment || ''}
+                onChange={(e) => setUpdates({ ...updates, initial_investment: parseFloat(e.target.value) || 0 })}
+                className="input-field"
+                placeholder="0.00"
+              />
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
+            <label className="flex items-center space-x-3 mb-3">
+              <input
+                type="checkbox"
+                checked={fieldsToUpdate.has('notes')}
+                onChange={() => toggleField('notes')}
+                className="w-5 h-5 text-blue-600"
+              />
+              <span className="font-medium text-gray-900">Notlar</span>
+            </label>
+            {fieldsToUpdate.has('notes') && (
+              <textarea
+                value={updates.notes || ''}
+                onChange={(e) => setUpdates({ ...updates, notes: e.target.value })}
+                className="input-field"
+                rows={3}
+                placeholder="Ürün hakkında notlar..."
               />
             )}
           </div>
