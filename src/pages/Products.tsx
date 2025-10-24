@@ -782,7 +782,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
     fulfillment_fee: product?.fulfillment_fee || '',
     advertising_cost: product?.advertising_cost || '',
     initial_investment: product?.initial_investment || '',
-    units_sold: product?.units_sold || '',
     notes: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -827,7 +826,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
         fulfillment_fee: formData.fulfillment_fee ? parseFloat(formData.fulfillment_fee.toString()) : undefined,
         advertising_cost: formData.advertising_cost ? parseFloat(formData.advertising_cost.toString()) : undefined,
         initial_investment: formData.initial_investment ? parseFloat(formData.initial_investment.toString()) : undefined,
-        units_sold: formData.units_sold ? parseInt(formData.units_sold.toString()) : undefined,
       };
 
       const validation = validateProduct(productData);
@@ -1030,13 +1028,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
 
               <div>
                 <label className="label">Satılan Adet</label>
-                <input
-                  type="number"
-                  value={formData.units_sold}
-                  onChange={(e) => setFormData({ ...formData, units_sold: e.target.value })}
-                  className="input-field"
-                  placeholder="0"
-                />
+                <div className="input-field bg-gray-50 text-gray-600 flex items-center justify-between">
+                  <span>Otomatik hesaplanır (sevkiyat verilerinden)</span>
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">AUTO</span>
+                </div>
               </div>
             </div>
 
@@ -1044,7 +1039,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
               <div className="flex items-center space-x-2 text-sm text-blue-800">
                 <span className="text-lg">💡</span>
                 <span>
-                  <strong>Pro özellik:</strong> Bu alanlar otomatik kar hesaplama ve ROI analizi için kullanılır.
+                  <strong>Pro özellik:</strong> Bu alanlar otomatik kar hesaplama ve ROI analizi için kullanılır. 
+                  Satılan adet sevkiyat verilerinden otomatik hesaplanır.
                 </span>
               </div>
             </div>
