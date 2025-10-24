@@ -84,19 +84,28 @@ const ResizableTable: React.FC<ResizableTableProps> = ({ children, className = '
         }
         .resize-handle {
           position: absolute;
-          right: -4px;
+          right: -6px;
           top: 0;
           bottom: 0;
-          width: 8px;
+          width: 12px;
           cursor: col-resize;
-          background-color: transparent;
+          background-color: #000000;
+          opacity: 0.6;
           z-index: 10;
+          border-radius: 2px;
+          transition: all 0.2s ease;
         }
         .resize-handle:hover {
-          background-color: #dbeafe;
+          background-color: #000000;
+          opacity: 0.8;
+          width: 14px;
+          right: -7px;
         }
         .resize-handle.active {
-          background-color: #3b82f6;
+          background-color: #000000;
+          opacity: 1;
+          width: 16px;
+          right: -8px;
         }
       `}</style>
       

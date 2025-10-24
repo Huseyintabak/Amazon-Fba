@@ -393,7 +393,7 @@ const Products: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <ResizableTable>
+        <ResizableTable>
             <table className="table min-w-full" style={{ minWidth: '1200px' }}>
             <thead className="table-header">
               <tr>
