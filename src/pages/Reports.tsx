@@ -887,7 +887,7 @@ const Reports: React.FC = () => {
           )}
         </>
       )}
-    </div>
+      </div>
     </PremiumBlur>
   );
 };
