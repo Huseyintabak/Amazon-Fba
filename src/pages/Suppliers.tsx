@@ -285,9 +285,10 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ supplier, onClose, onSucc
         showToast('Tedarikçi başarıyla güncellendi!', 'success');
       } else {
         // Create new supplier
+        const { data: { user } } = await supabase.auth.getUser();
         const { error } = await supabase
           .from('suppliers')
-          .insert([formData]);
+          .insert([{ ...formData, user_id: user?.id }]);
         
         if (error) throw error;
         showToast('Tedarikçi başarıyla eklendi!', 'success');
