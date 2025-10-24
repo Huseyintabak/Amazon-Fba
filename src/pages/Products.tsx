@@ -793,7 +793,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
       try {
         const { data, error } = await supabase
           .from('suppliers')
-          .select('id, name, company_name, country')
+          .select('id, name, company, country')
           .order('name');
         
         if (error) throw error;
@@ -916,7 +916,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                 <option value="">Tedarikçi seçin</option>
                 {suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.name}>
-                    {supplier.name} {supplier.company_name && `(${supplier.company_name})`}
+                    {supplier.name} {supplier.company && `(${supplier.company})`}
                   </option>
                 ))}
               </select>
