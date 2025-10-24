@@ -17,7 +17,7 @@ const PriceOptimizerButton: React.FC<PriceOptimizerButtonProps> = ({ product }) 
     
     // Simulate AI calculation
     setTimeout(() => {
-      const baseCost = product.product_cost;
+      const baseCost = product.product_cost!;
       const targetROI = 30; // 30% target ROI
       const amazonFees = 0.15; // 15% Amazon fees
       const shippingCost = 2.50; // Estimated shipping

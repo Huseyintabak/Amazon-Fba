@@ -266,7 +266,7 @@ Türkçe ve somut öneriler.
         return shipmentDate.getMonth() === index;
       });
 
-      const revenue = monthShipments.reduce((sum, s) => sum + (s.total_cost || 0), 0);
+      const revenue = monthShipments.reduce((sum, s) => sum + (s.total_shipping_cost || 0), 0);
 
       return {
         month,

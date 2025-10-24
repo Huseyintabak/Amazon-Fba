@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { purchaseOrdersApi, purchaseOrderItemsApi } from '../lib/supabaseApi';
 import { supabase } from '../lib/supabase';
-import { PurchaseOrder, PurchaseOrderItem, Supplier, Product } from '../types';
+import { Supplier, Product } from '../types';
 import { useToast } from '../contexts/ToastContext';
 
 interface POItem {
@@ -65,7 +65,7 @@ const NewPurchaseOrder: React.FC = () => {
         .order('name');
       
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data || []) as Product[]);
     } catch (error: any) {
       showToast(`Ürünler yüklenemedi: ${error.message}`, 'error');
     }

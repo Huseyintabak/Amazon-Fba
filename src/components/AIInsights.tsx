@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { generateDashboardInsights, DashboardInsight } from '../lib/gemini';
 import { Product } from '../types';
 

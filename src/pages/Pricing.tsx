@@ -307,7 +307,7 @@ const Pricing: React.FC = () => {
       {/* Pricing Cards */}
       <div ref={pricingCardsRef} className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan, index) => {
+          {plans.map((plan) => {
             const isCurrentPlan = planType === plan.name.toLowerCase();
             const isPro = plan.name === 'Pro';
             

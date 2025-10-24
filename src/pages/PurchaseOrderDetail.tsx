@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { purchaseOrdersApi, purchaseOrderItemsApi } from '../lib/supabaseApi';
-import { PurchaseOrder, PurchaseOrderItem } from '../types';
+import { PurchaseOrderItem } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -25,7 +25,9 @@ const PurchaseOrderDetail: React.FC = () => {
       setIsLoading(true);
       const data = await purchaseOrdersApi.getById(id!);
       setPO(data);
-      setItems(data?.items || []);
+      // Load items separately
+      const itemsData = await purchaseOrderItemsApi.getByPOId(id!);
+      setItems(itemsData || []);
     } catch (error: any) {
       showToast(`Hata: ${error.message}`, 'error');
       navigate('/purchase-orders');
@@ -37,7 +39,7 @@ const PurchaseOrderDetail: React.FC = () => {
   const updateStatus = async (newStatus: string) => {
     try {
       setIsUpdating(true);
-      await purchaseOrdersApi.update(id!, { status: newStatus });
+      await purchaseOrdersApi.update(id!, { status: newStatus as any });
       showToast('Durum güncellendi', 'success');
       loadPO();
     } catch (error: any) {
@@ -50,7 +52,7 @@ const PurchaseOrderDetail: React.FC = () => {
   const updatePaymentStatus = async (newStatus: string) => {
     try {
       setIsUpdating(true);
-      await purchaseOrdersApi.update(id!, { payment_status: newStatus });
+      await purchaseOrdersApi.update(id!, { payment_status: newStatus as any });
       showToast('Ödeme durumu güncellendi', 'success');
       loadPO();
     } catch (error: any) {

@@ -24,7 +24,7 @@ const ProductLimitBlur: React.FC<ProductLimitBlurProps> = ({
     const allChildren = React.Children.toArray(children);
     const visibleItems = allChildren.slice(0, limit); // 1-10 normal
     const blurItems = allChildren.slice(limit, limit + 2); // 11-12 blur
-    const modalItem = allChildren.slice(limit + 2, limit + 3); // 13th item becomes modal
+    // const modalItem = allChildren.slice(limit + 2, limit + 3); // 13th item becomes modal
     const remainingBlurItems = allChildren.slice(limit + 3); // 14+ blur
     
     return (

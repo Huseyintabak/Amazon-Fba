@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { purchaseOrdersApi } from '../lib/supabaseApi';
 import { PurchaseOrder } from '../types';
 import { useToast } from '../contexts/ToastContext';
@@ -23,7 +23,7 @@ const PurchaseOrders: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<PurchaseOrder | null>(null);
   const { showToast } = useToast();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   useEffect(() => {
     loadPurchaseOrders();
