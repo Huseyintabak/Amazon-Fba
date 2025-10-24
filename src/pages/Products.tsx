@@ -894,7 +894,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                 value={formData.amazon_barcode}
                 onChange={(e) => setFormData({ ...formData, amazon_barcode: e.target.value })}
                 className="input-field"
-                placeholder="1234567890123"
+                placeholder="B08QCQYPFX"
               />
             </div>
 
