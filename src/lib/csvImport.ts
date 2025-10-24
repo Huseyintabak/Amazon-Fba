@@ -53,6 +53,23 @@ export const validateProductData = (data: any): { isValid: boolean; errors: stri
     errors.push('Ürün Maliyeti geçerli bir sayı olmalı');
   }
   
+  // Validate premium fields if provided
+  const premiumFields = [
+    'Amazon Fiyatı', 'Referans Ücreti', 'Fulfillment Ücreti', 
+    'Reklam Maliyeti', 'İlk Yatırım'
+  ];
+  
+  premiumFields.forEach(field => {
+    if (data[field] && isNaN(parseFloat(data[field]))) {
+      errors.push(`${field} geçerli bir sayı olmalı`);
+    }
+  });
+  
+  // Validate percentage fields
+  if (data['Referans Ücreti'] && (parseFloat(data['Referans Ücreti']) < 0 || parseFloat(data['Referans Ücreti']) > 100)) {
+    errors.push('Referans Ücreti 0-100 arasında olmalı');
+  }
+  
   // Validate Amazon barcode if provided (should be 10 alphanumeric characters)
   if (data['Amazon Barkod'] && !/^[A-Z0-9]{10}$/.test(data['Amazon Barkod'])) {
     errors.push('Amazon Barkod 10 haneli alfanumerik kod olmalı (örn: B08QCQYPFX)');
@@ -87,7 +104,18 @@ export const csvToProduct = (data: any, existingProducts: any[]): any => {
     manufacturer_code: data['Üretici Kodu'] || '',
     manufacturer: data['Üretici'] || '',
     amazon_barcode: data['Amazon Barkod'] || '',
-    product_cost: data['Ürün Maliyeti'] ? parseFloat(data['Ürün Maliyeti']) : undefined
+    product_cost: data['Ürün Maliyeti'] ? parseFloat(data['Ürün Maliyeti']) : undefined,
+    // Premium fields
+    amazon_price: data['Amazon Fiyatı'] ? parseFloat(data['Amazon Fiyatı']) : undefined,
+    referral_fee_percent: data['Referans Ücreti'] ? parseFloat(data['Referans Ücreti']) : undefined,
+    fulfillment_fee: data['Fulfillment Ücreti'] ? parseFloat(data['Fulfillment Ücreti']) : undefined,
+    advertising_cost: data['Reklam Maliyeti'] ? parseFloat(data['Reklam Maliyeti']) : undefined,
+    initial_investment: data['İlk Yatırım'] ? parseFloat(data['İlk Yatırım']) : undefined,
+    // Supplier fields
+    supplier_name: data['Tedarikçi Adı'] || '',
+    supplier_country: data['Tedarikçi Ülkesi'] || '',
+    // Notes
+    notes: data['Notlar'] || ''
   };
 };
 
@@ -183,7 +211,15 @@ export const getCSVTemplate = (): string => {
     'Üretici',
     'Üretici Kodu',
     'Amazon Barkod',
-    'Ürün Maliyeti'
+    'Ürün Maliyeti',
+    'Tedarikçi Adı',
+    'Tedarikçi Ülkesi',
+    'Amazon Fiyatı',
+    'Referans Ücreti',
+    'Fulfillment Ücreti',
+    'Reklam Maliyeti',
+    'İlk Yatırım',
+    'Notlar'
   ];
   
   const sampleData = [
@@ -192,8 +228,16 @@ export const getCSVTemplate = (): string => {
     'SKU-001',
     'Örnek Üretici',
     'M001',
-    '1234567890123',
-    '25.99'
+    'B08QCQYPFX',
+    '25.99',
+    'Örnek Tedarikçi',
+    'Türkiye',
+    '49.99',
+    '15.0',
+    '3.50',
+    '5.00',
+    '1000.00',
+    'Bu ürün hakkında notlar...'
   ];
   
   return [headers.join(','), sampleData.join(',')].join('\n');

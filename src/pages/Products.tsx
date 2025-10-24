@@ -390,7 +390,7 @@ const Products: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
+          </div>
 
         <div className="overflow-x-auto">
           <ResizableTable>
@@ -483,7 +483,7 @@ const Products: React.FC = () => {
             </thead>
             <tbody className="table-body">
               <ProductLimitBlur currentCount={products.length} limit={10}>
-                {paginatedProducts.map((product) => (
+              {paginatedProducts.map((product) => (
                   <tr 
                     key={product.id} 
                     className={`table-row ${bulkSelection.isSelected(product.id) ? 'bg-blue-50' : ''}`}
@@ -506,24 +506,24 @@ const Products: React.FC = () => {
                             Barkod: {product.amazon_barcode}
                           </div>
                         )}
-                      </div>
-                    </td>
+                    </div>
+                  </td>
                     <td className="table-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
                       <code className="bg-gray-100 px-1 py-1 rounded text-xs font-mono block truncate" title={product.asin}>
-                        {product.asin}
-                      </code>
-                    </td>
+                      {product.asin}
+                    </code>
+                  </td>
                     <td className="table-cell" style={{ minWidth: '90px', maxWidth: '90px' }}>
                       <code className="bg-gray-100 px-1 py-1 rounded text-xs font-mono block truncate" title={product.merchant_sku}>
-                        {product.merchant_sku}
-                      </code>
-                    </td>
+                      {product.merchant_sku}
+                    </code>
+                  </td>
                     <td className="table-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
                       {product.supplier_name ? (
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900 truncate text-sm">
                             {product.supplier_name}
-                          </span>
+                      </span>
                           {product.supplier_country && (
                             <span className="text-xs text-gray-500">
                               {product.supplier_country}
@@ -532,17 +532,17 @@ const Products: React.FC = () => {
                         </div>
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
-                      )}
-                    </td>
+                    )}
+                  </td>
                     <td className="table-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
-                      {product.product_cost ? (
-                        <span className="font-semibold text-green-600">
-                          ${product.product_cost.toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
+                    {product.product_cost ? (
+                      <span className="font-semibold text-green-600">
+                        ${product.product_cost.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
                     <td className="table-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
                       {product.estimated_profit !== undefined && product.estimated_profit !== null ? (
                         <div className="flex flex-col">
@@ -567,34 +567,34 @@ const Products: React.FC = () => {
                       )}
                     </td>
                     <td className="table-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
-                      <div className="text-sm text-gray-500">
-                        {new Date(product.created_at).toLocaleDateString('tr-TR')}
-                      </div>
-                    </td>
+                    <div className="text-sm text-gray-500">
+                      {new Date(product.created_at).toLocaleDateString('tr-TR')}
+                    </div>
+                  </td>
                     <td className="table-cell" style={{ minWidth: '120px', maxWidth: '120px' }}>
                       <div className="flex flex-col space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleEdit(product)}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleEdit(product)}
                             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
+                      >
                             ✏️ Düzenle
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteModal(product)}
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteModal(product)}
                             className="text-red-600 hover:text-red-800 text-sm font-medium"
                           >
                             🗑️ Sil
-                          </button>
+                      </button>
                         </div>
                         <div className="flex items-center space-x-2">
                           <ProductPerformanceAnalyzer product={product} />
                           <PriceOptimizerButton product={product} />
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
               </ProductLimitBlur>
             </tbody>
           </table>
@@ -609,24 +609,24 @@ const Products: React.FC = () => {
                 {filteredProducts.length} üründen {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredProducts.length)} arası gösteriliyor
               </div>
               <div className="flex items-center space-x-2">
-                <button
+              <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
+                disabled={currentPage === 1}
                   className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Önceki
-                </button>
+              >
+                Önceki
+              </button>
                 <span className="text-sm text-gray-700">
                   {currentPage} / {totalPages}
                 </span>
-                <button
+              <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages}
                   className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Sonraki
-                </button>
-              </div>
+              >
+                Sonraki
+              </button>
+            </div>
             </div>
           </div>
         )}
@@ -682,13 +682,31 @@ const Products: React.FC = () => {
                 <p className="text-sm text-blue-700 mb-2">
                   CSV dosyanızda şu sütunlar bulunmalıdır:
                 </p>
-                <ul className="text-xs text-blue-600 list-disc list-inside space-y-1">
-                  <li>name (Ürün Adı) - Zorunlu</li>
-                  <li>asin (ASIN) - Opsiyonel</li>
-                  <li>merchant_sku (Merchant SKU) - Opsiyonel</li>
-                  <li>supplier_name (Tedarikçi Adı) - Opsiyonel</li>
-                  <li>product_cost (Ürün Maliyeti) - Opsiyonel</li>
-                </ul>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h5 className="font-medium text-blue-800 mb-2">Temel Alanlar:</h5>
+                    <ul className="text-xs text-blue-600 list-disc list-inside space-y-1">
+                      <li>Ürün Adı - Zorunlu</li>
+                      <li>ASIN - Opsiyonel</li>
+                      <li>Merchant SKU - Opsiyonel</li>
+                      <li>Ürün Maliyeti - Opsiyonel</li>
+                      <li>Amazon Barkod - Opsiyonel</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-purple-800 mb-2">🔒 Premium Alanlar:</h5>
+                    <ul className="text-xs text-purple-600 list-disc list-inside space-y-1">
+                      <li>Amazon Fiyatı ($)</li>
+                      <li>Referans Ücreti (%)</li>
+                      <li>Fulfillment Ücreti ($)</li>
+                      <li>Reklam Maliyeti ($)</li>
+                      <li>İlk Yatırım ($)</li>
+                      <li>Tedarikçi Adı</li>
+                      <li>Tedarikçi Ülkesi</li>
+                      <li>Notlar</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center space-x-4">
@@ -750,7 +768,7 @@ const Products: React.FC = () => {
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => {
-                  setShowImportModal(false);
+          setShowImportModal(false);
                   setCsvImportResults(null);
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -849,10 +867,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
 
 
       const validation = validateProduct(productData);
-      if (!validation.isValid) {
+    if (!validation.isValid) {
         showToast(`Hata: ${validation.errors.join(', ')}`, 'error');
-        return;
-      }
+      return;
+    }
 
       await onSuccess(productData as any);
     } catch (error: any) {
@@ -867,56 +885,56 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
       <div className="modal-content max-w-2xl">
         <h3 className="text-lg font-bold text-gray-900 mb-6">
           {product ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}
-        </h3>
+          </h3>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+          <div>
               <label className="label required">Ürün Adı</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="input-field"
-                placeholder="Ürün adını girin"
+              placeholder="Ürün adını girin"
                 required
-              />
-            </div>
+            />
+          </div>
 
-            <div>
+          <div>
               <label className="label">ASIN</label>
-              <input
-                type="text"
-                value={formData.asin}
-                onChange={(e) => setFormData({ ...formData, asin: e.target.value })}
+            <input
+              type="text"
+              value={formData.asin}
+              onChange={(e) => setFormData({ ...formData, asin: e.target.value })}
                 className="input-field"
                 placeholder="B01ABC123D"
-              />
-            </div>
+            />
+          </div>
 
-            <div>
+          <div>
               <label className="label">Merchant SKU</label>
-              <input
-                type="text"
-                value={formData.merchant_sku}
-                onChange={(e) => setFormData({ ...formData, merchant_sku: e.target.value })}
+            <input
+              type="text"
+              value={formData.merchant_sku}
+              onChange={(e) => setFormData({ ...formData, merchant_sku: e.target.value })}
                 className="input-field"
                 placeholder="SKU-123456"
-              />
-            </div>
+            />
+          </div>
 
-            <div>
+          <div>
               <label className="label">Amazon Barkod</label>
-              <input
-                type="text"
+            <input
+              type="text"
                 value={formData.amazon_barcode}
                 onChange={(e) => setFormData({ ...formData, amazon_barcode: e.target.value })}
-                className="input-field"
+              className="input-field"
                 placeholder="B08QCQYPFX"
-              />
-            </div>
+            />
+          </div>
 
-            <div>
+          <div>
               <label className="label">Tedarikçi</label>
               <select
                 value={formData.supplier_name}
@@ -942,29 +960,29 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
 
             <div>
               <label className="label">Tedarikçi Ülkesi</label>
-              <input
-                type="text"
+            <input
+              type="text"
                 value={formData.supplier_country}
                 onChange={(e) => setFormData({ ...formData, supplier_country: e.target.value })}
-                className="input-field"
+              className="input-field"
                 placeholder="Tedarikçi seçildiğinde otomatik doldurulur"
                 readOnly
-              />
-            </div>
+            />
+          </div>
 
-            <div>
+          <div>
               <label className="label">Üretici Kodu</label>
-              <input
-                type="text"
+            <input
+              type="text"
                 value={formData.manufacturer_code}
                 onChange={(e) => setFormData({ ...formData, manufacturer_code: e.target.value })}
-                className="input-field"
+              className="input-field"
                 placeholder="MFG-123"
-              />
-            </div>
+            />
+          </div>
 
-            <div>
-              <label className="label">Ürün Maliyeti ($)</label>
+          <div>
+            <label className="label">Ürün Maliyeti ($)</label>
               <input
                 type="number"
                 step="0.01"
@@ -984,7 +1002,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
               <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded-full">
                 PRO
               </span>
-            </div>
+          </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -997,7 +1015,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                   className="input-field"
                   placeholder="0.00"
                 />
-              </div>
+        </div>
 
               <div>
                 <label className="label">Referans Ücreti (%)</label>
@@ -1009,7 +1027,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                   className="input-field"
                   placeholder="15.00"
                 />
-              </div>
+        </div>
 
               <div>
                 <label className="label">Fulfillment Ücreti ($)</label>
@@ -1021,7 +1039,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                   className="input-field"
                   placeholder="0.00"
                 />
-              </div>
+        </div>
 
               <div>
                 <label className="label">Reklam Maliyeti ($)</label>
@@ -1033,27 +1051,27 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                   className="input-field"
                   placeholder="0.00"
                 />
-              </div>
+        </div>
 
-              <div>
+          <div>
                 <label className="label">İlk Yatırım ($)</label>
-                <input
+            <input
                   type="number"
                   step="0.01"
                   value={formData.initial_investment}
                   onChange={(e) => setFormData({ ...formData, initial_investment: e.target.value })}
-                  className="input-field"
+              className="input-field"
                   placeholder="0.00"
-                />
-              </div>
+            />
+          </div>
 
               <div>
                 <label className="label">Satılan Adet</label>
                 <div className="input-field bg-gray-50 text-gray-600 flex items-center justify-between">
                   <span>Otomatik hesaplanır (sevkiyat verilerinden)</span>
                   <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">AUTO</span>
+                  </div>
                 </div>
-              </div>
             </div>
 
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -1063,9 +1081,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
                   <strong>Pro özellik:</strong> Bu alanlar otomatik kar hesaplama ve ROI analizi için kullanılır. 
                   Satılan adet sevkiyat verilerinden otomatik hesaplanır.
                 </span>
-              </div>
-            </div>
-          </div>
+                  </div>
+                  </div>
+                </div>
 
           <div>
             <label className="label">Notlar</label>
@@ -1076,7 +1094,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
               rows={3}
               placeholder="Ürün hakkında notlar..."
             />
-          </div>
+                  </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
             <button
@@ -1086,13 +1104,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess
             >
               İptal
             </button>
-            <button
+              <button
               type="submit"
               disabled={isLoading}
               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+              >
               {isLoading ? 'Kaydediliyor...' : (product ? 'Güncelle' : 'Ekle')}
-            </button>
+              </button>
           </div>
         </form>
       </div>
