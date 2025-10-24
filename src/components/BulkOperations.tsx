@@ -403,8 +403,8 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedProducts, onClose
             </label>
             {fieldsToUpdate.has('notes') && (
               <textarea
-                value={updates.notes || ''}
-                onChange={(e) => setUpdates({ ...updates, notes: e.target.value })}
+                value={(updates as any).notes || ''}
+                onChange={(e) => setUpdates({ ...updates, notes: e.target.value } as any)}
                 className="input-field"
                 rows={3}
                 placeholder="Ürün hakkında notlar..."
