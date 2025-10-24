@@ -319,7 +319,7 @@ const Products: React.FC = () => {
         <div className="relative">
           <input
             type="text"
-            value={filters.search}
+            value={filters.search || ''}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             placeholder="🔍 Ürün adı, ASIN, Merchant SKU veya tedarikçi adı ile ara..."
             className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
