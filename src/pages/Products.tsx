@@ -227,17 +227,43 @@ const Products: React.FC = () => {
     setShowImportModal(true);
   };
 
-  const handleCSVUpload = async (file: File) => {
+  const handleCSVUpload = async (file: File, updateMode: boolean = false) => {
     try {
-      const results = await processCSVFile(file, addProduct as any);
-      setCsvImportResults({
-        success: results.success ? results.products.length : 0,
-        failed: results.errors.length,
-        errors: results.errors
-      });
-      showToast(`CSV içe aktarma tamamlandı: ${results.success ? results.products.length : 0} başarılı, ${results.errors.length} başarısız`, 'success');
+      const results = await processCSVFile(file, products, updateMode);
+      
+      if (updateMode) {
+        // Update existing products
+        if (results.updates && results.updates.length > 0) {
+          const updatePromises = results.updates.map(product => updateProduct(product.id, product));
+          await Promise.all(updatePromises);
+          await loadProducts(); // Refresh the list
+        }
+        
+        setCsvImportResults({
+          success: results.updates ? results.updates.length : 0,
+          failed: results.errors.length,
+          errors: results.errors
+        });
+        
+        showToast(`CSV güncelleme tamamlandı: ${results.updates ? results.updates.length : 0} güncellendi, ${results.errors.length} hata`, 'success');
+      } else {
+        // Create new products
+        if (results.products && results.products.length > 0) {
+          const createPromises = results.products.map(product => addProduct(product));
+          await Promise.all(createPromises);
+          await loadProducts(); // Refresh the list
+        }
+        
+        setCsvImportResults({
+          success: results.products ? results.products.length : 0,
+          failed: results.errors.length,
+          errors: results.errors
+        });
+        
+        showToast(`CSV içe aktarma tamamlandı: ${results.products ? results.products.length : 0} başarılı, ${results.errors.length} başarısız`, 'success');
+      }
     } catch (error: any) {
-      showToast(`CSV içe aktarma hatası: ${error.message}`, 'error');
+      showToast(`CSV işleme hatası: ${error.message}`, 'error');
     }
   };
 
@@ -677,6 +703,37 @@ const Products: React.FC = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-4">CSV İçe Aktar</h3>
             
             <div className="space-y-4">
+              {/* Import Mode Selection */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-3">📋 İşlem Modu</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="create"
+                      defaultChecked
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Yeni Ürün Ekle</div>
+                      <div className="text-sm text-gray-600">CSV'deki ürünleri yeni olarak ekler</div>
+                    </div>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="update"
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Mevcut Ürünleri Güncelle</div>
+                      <div className="text-sm text-gray-600">ASIN/SKU ile eşleşen ürünleri günceller</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">📋 CSV Formatı</h4>
                 <p className="text-sm text-blue-700 mb-2">
@@ -716,7 +773,10 @@ const Products: React.FC = () => {
                   accept=".csv"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleCSVUpload(file);
+                    if (file) {
+                      const importMode = (document.querySelector('input[name="importMode"]:checked') as HTMLInputElement)?.value === 'update';
+                      handleCSVUpload(file, importMode);
+                    }
                   }}
                   className="hidden"
                 />

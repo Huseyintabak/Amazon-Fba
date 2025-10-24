@@ -120,11 +120,12 @@ export const csvToProduct = (data: any, existingProducts: any[]): any => {
 };
 
 /**
- * Process CSV file and return products
+ * Process CSV file and return products (with update support)
  */
-export const processCSVFile = (file: File, existingProducts: any[]): Promise<{
+export const processCSVFile = (file: File, existingProducts: any[], updateMode: boolean = false): Promise<{
   success: boolean;
   products: any[];
+  updates: any[];
   errors: string[];
   duplicates: string[];
 }> => {
@@ -140,6 +141,7 @@ export const processCSVFile = (file: File, existingProducts: any[]): Promise<{
           resolve({
             success: false,
             products: [],
+            updates: [],
             errors: ['CSV dosyası boş veya geçersiz format'],
             duplicates: []
           });
@@ -147,6 +149,7 @@ export const processCSVFile = (file: File, existingProducts: any[]): Promise<{
         }
         
         const products: any[] = [];
+        const updates: any[] = [];
         const errors: string[] = [];
         const duplicates: string[] = [];
         
@@ -158,8 +161,29 @@ export const processCSVFile = (file: File, existingProducts: any[]): Promise<{
               return;
             }
             
-            const product = csvToProduct(row, existingProducts);
-            products.push(product);
+            if (updateMode) {
+              // Update mode: find existing product by ASIN or Merchant SKU
+              const existingProduct = existingProducts.find(p => 
+                p.asin === row['ASIN'] || p.merchant_sku === row['Merchant SKU']
+              );
+              
+              if (existingProduct) {
+                // Update existing product
+                const updatedProduct = {
+                  ...existingProduct,
+                  ...csvToProduct(row, existingProducts),
+                  id: existingProduct.id // Keep original ID
+                };
+                updates.push(updatedProduct);
+              } else {
+                // Product not found for update
+                errors.push(`Satır ${index + 2}: Ürün bulunamadı (ASIN: ${row['ASIN']}, SKU: ${row['Merchant SKU']})`);
+              }
+            } else {
+              // Create mode: check for duplicates
+              const product = csvToProduct(row, existingProducts);
+              products.push(product);
+            }
           } catch (error) {
             if (error instanceof Error) {
               if (error.message.includes('zaten mevcut')) {
@@ -172,8 +196,9 @@ export const processCSVFile = (file: File, existingProducts: any[]): Promise<{
         });
         
         resolve({
-          success: products.length > 0,
+          success: products.length > 0 || updates.length > 0,
           products,
+          updates,
           errors,
           duplicates
         });
@@ -181,6 +206,7 @@ export const processCSVFile = (file: File, existingProducts: any[]): Promise<{
         resolve({
           success: false,
           products: [],
+          updates: [],
           errors: ['CSV dosyası işlenirken hata oluştu'],
           duplicates: []
         });
@@ -191,6 +217,7 @@ export const processCSVFile = (file: File, existingProducts: any[]): Promise<{
       resolve({
         success: false,
         products: [],
+        updates: [],
         errors: ['Dosya okunamadı'],
         duplicates: []
       });
