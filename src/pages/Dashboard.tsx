@@ -1,10 +1,9 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../stores/useStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
-import { useCache, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
-import { productsApi, shipmentsApi, profitReportsApi } from '../lib/supabaseApi';
+import { profitReportsApi } from '../lib/supabaseApi';
 import WelcomeModal from '../components/WelcomeModal';
 import { StatCard } from './Dashboard/components/StatCard';
 import { MonthlyChart } from './Dashboard/components/MonthlyChart';
