@@ -25,8 +25,8 @@ const ForgotPassword: React.FC = () => {
         setSent(true);
         showToast('Şifre sıfırlama bağlantısı email adresinize gönderildi', 'success');
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
       showToast('Bir hata oluştu', 'error');
     } finally {
       setLoading(false);

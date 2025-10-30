@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { getProductsByShipment } from '../lib/mockData';
 import { Shipment } from '../types';
-import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useStore } from '../stores/useStore';
 import { useFilterPresets } from '../hooks/useFilterPresets';
 import AdvancedFiltersPanel, { AdvancedFilters, FilterPreset } from '../components/AdvancedFiltersPanel';
 import LoadingSpinner from '../components/LoadingSpinner';
 // import { validateShipment, ValidationResult } from '../lib/validation';
 
 const Shipments: React.FC = () => {
-  const { shipments, deleteShipment, loadShipments } = useSupabaseStore();
+  const { shipments, deleteShipment, loadShipments } = useStore();
   const { presets, savePreset, deletePreset } = useFilterPresets('shipments');
   const [filters, setFilters] = useState<AdvancedFilters>({});
   const [showDeleteModal, setShowDeleteModal] = useState<Shipment | null>(null);

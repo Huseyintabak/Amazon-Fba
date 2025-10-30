@@ -1,0 +1,46 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle with Gradient -->
+  <defs>
+    <linearGradient id="planetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1D4ED8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="trackerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="packageGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Planet Circle -->
+  <circle cx="32" cy="32" r="28" fill="url(#planetGradient)" stroke="#1E40AF" stroke-width="2"/>
+  
+  <!-- Planet Surface Lines -->
+  <path d="M12 32 Q32 20 52 32" stroke="#60A5FA" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M12 32 Q32 44 52 32" stroke="#60A5FA" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <!-- FBA Package Box -->
+  <rect x="24" y="24" width="16" height="12" rx="2" fill="url(#packageGradient)" stroke="#D97706" stroke-width="1"/>
+  
+  <!-- Package Details -->
+  <rect x="26" y="26" width="12" height="8" rx="1" fill="#FEF3C7" opacity="0.8"/>
+  <line x1="28" y1="28" x2="36" y2="28" stroke="#D97706" stroke-width="1"/>
+  <line x1="28" y1="30" x2="34" y2="30" stroke="#D97706" stroke-width="0.8"/>
+  <line x1="28" y1="32" x2="32" y2="32" stroke="#D97706" stroke-width="0.8"/>
+  
+  <!-- Tracking Arrow -->
+  <path d="M40 32 L48 32 M44 28 L48 32 L44 36" stroke="url(#trackerGradient)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Tracking Dots -->
+  <circle cx="50" cy="28" r="1.5" fill="url(#trackerGradient)"/>
+  <circle cx="52" cy="32" r="1.5" fill="url(#trackerGradient)"/>
+  <circle cx="50" cy="36" r="1.5" fill="url(#trackerGradient)"/>
+  
+  <!-- Outer Ring for Modern Look -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#E5E7EB" stroke-width="1" opacity="0.3"/>
+</svg>
+

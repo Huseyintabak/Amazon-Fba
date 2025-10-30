@@ -1,3 +1,14 @@
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  user_id?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface Product {
   id: string;
   user_id?: string;
@@ -24,6 +35,11 @@ export interface Product {
   supplier_name?: string;
   supplier_company?: string;
   supplier_country?: string;
+  // Category and image
+  category_id?: string;
+  category?: Category;
+  image_url?: string;
+  weight?: number;
   // Notes
   notes?: string;
   created_at: string;
@@ -194,4 +210,39 @@ export interface ShipmentReport {
   carrier: string;
   count: number;
   total_cost: number;
+}
+
+// AI Components Types
+export interface PriceRecommendation {
+  id: string;
+  productId?: string;
+  productName: string;
+  currentPrice: number;
+  recommendedPrice: number;
+  priceChange?: number;
+  priceChangePercent?: number;
+  expectedSalesIncrease?: number;
+  expectedProfitIncrease?: number;
+  confidence?: number;
+  reasoning?: string;
+  marketPosition?: 'premium' | 'competitive' | 'budget';
+  competitorAnalysis?: {
+    avgCompetitorPrice: number;
+    priceRange: { min: number; max: number };
+    marketShare: number;
+  };
+  riskAssessment?: {
+    salesRisk: 'low' | 'medium' | 'high';
+    profitRisk: 'low' | 'medium' | 'high';
+    marketRisk: 'low' | 'medium' | 'high';
+  };
+  implementation?: {
+    strategy: string;
+    timeline: string;
+    monitoring: string[];
+  };
+  expectedImpact: 'high' | 'medium' | 'low';
+  rationale: string;
+  estimatedRevenueIncrease: number;
+  riskLevel: 'low' | 'medium' | 'high';
 }

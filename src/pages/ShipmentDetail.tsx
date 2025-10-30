@@ -11,7 +11,7 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useStore } from '../stores/useStore';
 import { Shipment, ShipmentItem } from '../types';
 
 interface ShipmentDetailProps {
@@ -19,7 +19,7 @@ interface ShipmentDetailProps {
 }
 
 const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId }) => {
-  const { shipments, loadShipments } = useSupabaseStore();
+  const { shipments, loadShipments } = useStore();
   const [shipment, setShipment] = useState<Shipment | undefined>();
   const [shipmentItems, setShipmentItems] = useState<ShipmentItem[]>([]);
 

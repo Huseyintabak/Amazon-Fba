@@ -84,11 +84,11 @@ const ProductPerformanceAnalyzer: React.FC<ProductPerformanceAnalyzerProps> = ({
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Tedarikçi:</span>
-                    <span className="font-semibold">{product.supplier_name || 'N/A'}</span>
+                    <span className="font-semibold">{product.supplier_id || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Ülke:</span>
-                    <span className="font-semibold">{product.supplier_country || 'N/A'}</span>
+                    <span className="text-sm text-gray-600">Üretici Kodu:</span>
+                    <span className="font-semibold">{product.manufacturer_code || 'N/A'}</span>
                   </div>
                 </div>
               </div>

@@ -131,9 +131,6 @@ sudo ./server-deploy.sh
 
 # Sadece güncelleme
 sudo ./update.sh
-
-# Docker ile deployment
-sudo ./docker-deploy.sh
 ```
 
 ### Manuel Deployment

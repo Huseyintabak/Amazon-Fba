@@ -1,4 +1,7 @@
 // Form validation utilities
+import type { Product, Shipment } from '../types';
+import { productSchema, shipmentSchema, categorySchema, supplierSchema } from './schemas';
+import { ZodError } from 'zod';
 
 export interface ValidationError {
   field: string;
@@ -10,8 +13,34 @@ export interface ValidationResult {
   errors: ValidationError[];
 }
 
+// Generic validation helper
+const zodToValidationResult = (result: { success: boolean; error?: ZodError }): ValidationResult => {
+  if (result.success) {
+    return { isValid: true, errors: [] };
+  }
+
+  const errors: ValidationError[] = [];
+  result.error?.errors.forEach((err) => {
+    errors.push({
+      field: err.path.join('.'),
+      message: err.message
+    });
+  });
+
+  return {
+    isValid: false,
+    errors
+  };
+};
+
 // Product validation
-export const validateProduct = (product: any): ValidationResult => {
+export const validateProduct = (product: unknown): ValidationResult => {
+  const result = productSchema.safeParse(product);
+  return zodToValidationResult(result);
+};
+
+// Temporary backward compatibility - will be removed
+export const validateProductOld = (product: Partial<Product>): ValidationResult => {
   const errors: ValidationError[] = [];
 
   // Required fields
@@ -45,7 +74,7 @@ export const validateProduct = (product: any): ValidationResult => {
 };
 
 // Shipment validation
-export const validateShipment = (shipment: any): ValidationResult => {
+export const validateShipment = (shipment: Partial<Shipment>): ValidationResult => {
   const errors: ValidationError[] = [];
 
   // Required fields
@@ -79,7 +108,7 @@ export const validateShipment = (shipment: any): ValidationResult => {
   if (!shipment.items || shipment.items.length === 0) {
     errors.push({ field: 'items', message: 'En az bir ürün seçilmelidir' });
   } else {
-    shipment.items.forEach((item: any, index: number) => {
+    shipment.items.forEach((item: Record<string, unknown>, index: number) => {
       if (!item.product_id) {
         errors.push({ field: `items[${index}].product_id`, message: 'Ürün seçilmelidir' });
       }
@@ -99,14 +128,14 @@ export const validateShipment = (shipment: any): ValidationResult => {
 };
 
 // Generic field validation
-export const validateField = (value: any, rules: {
+export const validateField = (value: unknown, rules: {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
   min?: number;
   max?: number;
   pattern?: RegExp;
-  custom?: (value: any) => string | null;
+  custom?: (value: unknown) => string | null;
 }): string | null => {
   if (rules.required && (!value || value.toString().trim().length === 0)) {
     return 'Bu alan gerekli';

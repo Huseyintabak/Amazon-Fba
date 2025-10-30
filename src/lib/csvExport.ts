@@ -1,9 +1,10 @@
 // CSV Export Utility Functions
+import type { Product } from '../types';
 
 /**
  * Convert array of objects to CSV string
  */
-export const convertToCSV = (data: any[], headers: string[]): string => {
+export const convertToCSV = <T extends Record<string, unknown>>(data: T[], headers: string[]): string => {
   if (data.length === 0) return '';
   
   // Create header row
@@ -45,41 +46,33 @@ export const downloadCSV = (csvContent: string, filename: string): void => {
 /**
  * Export products for update (CSV format compatible with import)
  */
-export const exportProductsForUpdate = (products: any[]): void => {
+export const exportProductsForUpdate = (products: Product[]): void => {
   const headers = [
     'Ürün Adı',
     'ASIN',
     'Merchant SKU',
-    'Üretici',
     'Üretici Kodu',
     'Amazon Barkod',
     'Ürün Maliyeti',
-    'Tedarikçi Adı',
-    'Tedarikçi Ülkesi',
     'Amazon Fiyatı',
     'Referans Ücreti',
     'Fulfillment Ücreti',
     'Reklam Maliyeti',
-    'İlk Yatırım',
-    'Notlar'
+    'İlk Yatırım'
   ];
   
   const csvData = products.map(product => ({
     'Ürün Adı': product.name || '',
     'ASIN': product.asin || '',
     'Merchant SKU': product.merchant_sku || '',
-    'Üretici': product.manufacturer || '',
     'Üretici Kodu': product.manufacturer_code || '',
     'Amazon Barkod': product.amazon_barcode || '',
     'Ürün Maliyeti': product.product_cost || '',
-    'Tedarikçi Adı': product.supplier_name || '',
-    'Tedarikçi Ülkesi': product.supplier_country || '',
     'Amazon Fiyatı': product.amazon_price || '',
     'Referans Ücreti': product.referral_fee_percent || '',
     'Fulfillment Ücreti': product.fulfillment_fee || '',
     'Reklam Maliyeti': product.advertising_cost || '',
-    'İlk Yatırım': product.initial_investment || '',
-    'Notlar': product.notes || ''
+    'İlk Yatırım': product.initial_investment || ''
   }));
   
   const csvContent = convertToCSV(csvData, headers);
@@ -89,22 +82,23 @@ export const exportProductsForUpdate = (products: any[]): void => {
 };
 
 /**
- * Export product report to CSV
+ * Export product report to CSV (detailed report)
  */
-export const exportProductReport = (products: any[]): void => {
+export const exportProductReport = (products: Product[]): void => {
   const headers = [
     'ASIN',
     'Ürün Adı',
     'Merchant SKU',
-    'Üretici',
     'Üretici Kodu',
     'Amazon Barkod',
     'Ürün Maliyeti',
-    'Toplam Sevk Edilen',
-    'Toplam Kargo Maliyeti',
-    'Ortalama Birim Maliyet',
-    'Sevkiyat Sayısı',
-    'Son Sevkiyat Tarihi',
+    'Amazon Fiyatı',
+    'Referans Ücreti',
+    'Fulfillment Ücreti',
+    'Reklam Maliyeti',
+    'İlk Yatırım',
+    'Tedarikçi Adı',
+    'Tedarikçi Ülkesi',
     'Oluşturulma Tarihi'
   ];
   
@@ -112,80 +106,21 @@ export const exportProductReport = (products: any[]): void => {
     'ASIN': product.asin || '',
     'Ürün Adı': product.name || '',
     'Merchant SKU': product.merchant_sku || '',
-    'Üretici': product.manufacturer || '',
     'Üretici Kodu': product.manufacturer_code || '',
     'Amazon Barkod': product.amazon_barcode || '',
-    'Ürün Maliyeti': product.product_cost ? `$${product.product_cost.toFixed(2)}` : '',
-    'Toplam Sevk Edilen': product.totalShipped || 0,
-    'Toplam Kargo Maliyeti': product.totalShippingCost ? `$${product.totalShippingCost.toFixed(2)}` : '$0.00',
-    'Ortalama Birim Maliyet': product.averageUnitCost ? `$${product.averageUnitCost.toFixed(2)}` : '$0.00',
-    'Sevkiyat Sayısı': product.shipmentCount || 0,
-    'Son Sevkiyat Tarihi': product.lastShipmentDate ? new Date(product.lastShipmentDate).toLocaleDateString('tr-TR') : '',
-    'Oluşturulma Tarihi': new Date(product.created_at).toLocaleDateString('tr-TR')
+    'Ürün Maliyeti': product.product_cost ? product.product_cost.toString() : '',
+    'Amazon Fiyatı': product.amazon_price ? product.amazon_price.toString() : '',
+    'Referans Ücreti': product.referral_fee_percent ? product.referral_fee_percent.toString() : '',
+    'Fulfillment Ücreti': product.fulfillment_fee ? product.fulfillment_fee.toString() : '',
+    'Reklam Maliyeti': product.advertising_cost ? product.advertising_cost.toString() : '',
+    'İlk Yatırım': product.initial_investment ? product.initial_investment.toString() : '',
+    'Tedarikçi Adı': product.supplier_name || '',
+    'Tedarikçi Ülkesi': product.supplier_country || '',
+    'Oluşturulma Tarihi': product.created_at ? new Date(product.created_at).toLocaleDateString('tr-TR') : ''
   }));
   
   const csvContent = convertToCSV(csvData, headers);
   const filename = `urun-raporu-${new Date().toISOString().split('T')[0]}.csv`;
   
   downloadCSV(csvContent, filename);
-};
-
-/**
- * Export shipment report to CSV
- */
-export const exportShipmentReport = (shipments: any[]): void => {
-  const headers = [
-    'FBA Shipment ID',
-    'Sevkiyat Tarihi',
-    'Kargo Firması',
-    'Toplam Kargo Maliyeti',
-    'Durum',
-    'Notlar',
-    'Ürün Sayısı',
-    'Toplam Adet',
-    'Ortalama Birim Maliyet',
-    'Oluşturulma Tarihi'
-  ];
-  
-  const csvData = shipments.map(shipment => ({
-    'FBA Shipment ID': shipment.fba_shipment_id || '',
-    'Sevkiyat Tarihi': new Date(shipment.shipment_date).toLocaleDateString('tr-TR'),
-    'Kargo Firması': shipment.carrier_company || '',
-    'Toplam Kargo Maliyeti': `$${shipment.total_shipping_cost.toFixed(2)}`,
-    'Durum': shipment.status === 'completed' ? 'Tamamlandı' : 'Taslak',
-    'Notlar': shipment.notes || '',
-    'Ürün Sayısı': shipment.productCount || 0,
-    'Toplam Adet': shipment.totalQuantity || 0,
-    'Ortalama Birim Maliyet': shipment.averageUnitCost ? `$${shipment.averageUnitCost.toFixed(2)}` : '$0.00',
-    'Oluşturulma Tarihi': new Date(shipment.created_at).toLocaleDateString('tr-TR')
-  }));
-  
-  const csvContent = convertToCSV(csvData, headers);
-  const filename = `sevkiyat-raporu-${new Date().toISOString().split('T')[0]}.csv`;
-  
-  downloadCSV(csvContent, filename);
-};
-
-/**
- * Export filtered data to CSV
- */
-export const exportFilteredData = (data: any[], type: 'products' | 'shipments'): void => {
-  if (type === 'products') {
-    exportProductReport(data);
-  } else {
-    exportShipmentReport(data);
-  }
-};
-
-/**
- * Export all data to CSV (for backup)
- */
-export const exportAllData = (products: any[], shipments: any[]): void => {
-  // Export products
-  exportProductReport(products);
-  
-  // Wait a bit and export shipments
-  setTimeout(() => {
-    exportShipmentReport(shipments);
-  }, 1000);
 };

@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import Header from './Header';
 import AIChatAssistant from '../AIChatAssistant';
-import { useSupabaseStore } from '../../stores/useSupabaseStore';
+import { useStore } from '../../stores/useStore';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { products, shipments } = useSupabaseStore();
+  const { products, shipments } = useStore();
 
   // Calculate metrics for AI Chat
   const metrics = useMemo(() => {

@@ -57,14 +57,14 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({ supplierId, c
       // Group by supplier and calculate metrics
       const supplierMap = new Map<string, PerformanceMetrics>();
 
-      orders?.forEach((order: any) => {
-        const supplierId = order.supplier_id;
-        const supplier = order.supplier;
+      orders?.forEach((order: Record<string, unknown>) => {
+        const supplierId = order.supplier_id as string;
+        const supplier = order.supplier as Record<string, unknown> | undefined;
 
         if (!supplierMap.has(supplierId)) {
           supplierMap.set(supplierId, {
             supplierId,
-            supplierName: supplier?.name || 'Unknown',
+            supplierName: (supplier?.name as string) || 'Unknown',
             totalOrders: 0,
             completedOrders: 0,
             cancelledOrders: 0,
@@ -72,14 +72,14 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({ supplierId, c
             avgOrderValue: 0,
             avgDeliveryDays: 0,
             onTimeDeliveryRate: 0,
-            rating: supplier?.rating || 0,
+            rating: (supplier?.rating as number) || 0,
             lastOrderDate: null
           });
         }
 
         const metric = supplierMap.get(supplierId)!;
         metric.totalOrders++;
-        metric.totalSpent += order.total_amount || 0;
+        metric.totalSpent += (order.total_amount as number) || 0;
 
         if (order.status === 'received') {
           metric.completedOrders++;
@@ -90,24 +90,24 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({ supplierId, c
 
         // Calculate delivery time if completed
         if (order.actual_delivery_date && order.order_date) {
-          const orderDate = new Date(order.order_date);
-          const deliveryDate = new Date(order.actual_delivery_date);
+          const orderDate = new Date(order.order_date as string);
+          const deliveryDate = new Date(order.actual_delivery_date as string);
           const days = Math.ceil((deliveryDate.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
           metric.avgDeliveryDays = (metric.avgDeliveryDays + days) / 2;
         }
 
         // On-time delivery tracking
         if (order.actual_delivery_date && order.expected_delivery_date) {
-          const expectedDate = new Date(order.expected_delivery_date);
-          const actualDate = new Date(order.actual_delivery_date);
+          const expectedDate = new Date(order.expected_delivery_date as string);
+          const actualDate = new Date(order.actual_delivery_date as string);
           if (actualDate <= expectedDate) {
             metric.onTimeDeliveryRate++;
           }
         }
 
         // Update last order date
-        if (!metric.lastOrderDate || order.order_date > metric.lastOrderDate) {
-          metric.lastOrderDate = order.order_date;
+        if (!metric.lastOrderDate || (order.order_date as string) > metric.lastOrderDate) {
+          metric.lastOrderDate = order.order_date as string;
         }
       });
 

@@ -40,11 +40,11 @@ const Header: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white text-lg">🚚</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                <img src="/logo.svg" alt="Planet FBA Tracker" className="w-full h-full" />
               </div>
               <h1 className="ml-3 text-lg sm:text-xl font-bold text-gray-900 truncate">
-                Amazon FBA Tracker
+                Planet FBA Tracker
               </h1>
             </div>
           </div>

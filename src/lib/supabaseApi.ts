@@ -1,11 +1,12 @@
 import { supabase, supabaseTyped } from './supabase';
-import { Product, Shipment, ShipmentItem, DashboardStats, PurchaseOrder, PurchaseOrderItem } from '../types';
+import { Product, Shipment, ShipmentItem, DashboardStats, PurchaseOrder, PurchaseOrderItem, Supplier, Category } from '../types';
+import { logger } from './logger';
 
 // Helper to get current user ID from session
 const getUserId = async (): Promise<string> => {
   const { data: { session }, error } = await supabase.auth.getSession();
   
-  console.log('Session check:', {
+  logger.log('Session check:', {
     hasError: !!error,
     hasSession: !!session,
     hasUser: !!session?.user,
@@ -14,7 +15,7 @@ const getUserId = async (): Promise<string> => {
   });
   
   if (error) {
-    console.error('Session error:', error);
+    logger.error('Session error:', error);
     throw new Error(`Authentication error: ${error.message}`);
   }
   
@@ -38,15 +39,30 @@ const getUserId = async (): Promise<string> => {
 // =====================================================
 
 export const productsApi = {
-  // Get all products with supplier info (RLS automatically filters by user_id)
+  // Get all products with supplier and category info (RLS automatically filters by user_id)
   async getAll(): Promise<Product[]> {
     const { data, error } = await supabase
-      .from('products_with_supplier')
-      .select('*')
+      .from('products')
+      .select(`
+        *,
+        suppliers!left(name, country),
+        categories!left(name, color, icon)
+      `)
       .order('created_at', { ascending: false});
 
-    if (error) throw error;
-    return data || [];
+    if (error) {
+      logger.error('Error loading products:', error);
+      throw error;
+    }
+    
+    // Transform data to include supplier info
+    const transformedData = data?.map(product => ({
+      ...product,
+      supplier_name: product.suppliers?.name || '',
+      supplier_country: product.suppliers?.country || ''
+    })) || [];
+    
+    return transformedData;
   },
 
   // Get product by ID
@@ -63,17 +79,19 @@ export const productsApi = {
 
   // Create product using RPC function (bypasses session issues)
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>): Promise<Product> {
-    const { data, error } = await supabase.rpc('create_product_with_user', {
-      p_name: product.name,
-      p_asin: product.asin,
-      p_merchant_sku: product.merchant_sku,
-      p_manufacturer_code: product.manufacturer_code || null,
-      p_amazon_barcode: product.amazon_barcode || null,
-      p_product_cost: product.product_cost || 0
-    });
+    const userId = await getUserId();
+    const { data, error } = await supabase
+      .from('products')
+      .insert([{ ...product, user_id: userId }])
+      .select(`
+        *,
+        suppliers!left(name, country),
+        categories!left(name, color, icon)
+      `)
+      .single();
 
     if (error) {
-      console.error('Supabase create product error:', error);
+      logger.error('Supabase create product error:', error);
       if (error.code === '23505') {
         throw new Error(`Ürün zaten mevcut: ${error.details || 'Duplicate key error'}`);
       }
@@ -82,22 +100,39 @@ export const productsApi = {
       }
       throw error;
     }
-    
-    // RPC returns array, get first item
-    return data && data.length > 0 ? data[0] : data;
+
+    return data;
   },
 
   // Update product
   async update(id: string, product: Partial<Product>): Promise<Product> {
-    const { data, error } = await supabaseTyped
+    logger.log('updateProduct called with id:', id, 'product:', product);
+    
+    const { data, error } = await supabase
       .from('products')
-      .update({ ...product, updated_at: new Date().toISOString() } as any)
+      .update({ ...product, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        suppliers!left(name, country),
+        categories!left(name, color, icon)
+      `)
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) {
+      logger.error('updateProduct error:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      logger.error('updateProduct: No data returned');
+      throw new Error('Product update failed - no data returned');
+    }
+    
+    logger.log('updateProduct success, returned data:', data);
+    
+    // Explicit type assertion for proper return
+    return data as Product;
   },
 
   // Delete product
@@ -130,12 +165,15 @@ export const productsApi = {
 export const shipmentsApi = {
   // Get all shipments
   async getAll(): Promise<Shipment[]> {
-    const { data, error } = await supabaseTyped
+    const { data, error } = await supabase
       .from('shipments')
       .select('*')
       .order('shipment_date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      logger.error('Error loading shipments:', error);
+      throw error;
+    }
     return data || [];
   },
 
@@ -308,13 +346,16 @@ export const shipmentItemsApi = {
 export const dashboardApi = {
   // Get dashboard stats
   async getStats(): Promise<DashboardStats> {
-    const { data, error } = await supabaseTyped
+    const { data, error } = await supabase
       .from('dashboard_stats')
       .select('*')
       .limit(1)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      logger.error('Error loading dashboard stats:', error);
+      throw error;
+    }
     
     // If no data (new user with no products), return empty stats
     if (!data) {
@@ -373,7 +414,7 @@ export const dashboardApi = {
 // Check connection
 export const checkConnection = async (): Promise<boolean> => {
   try {
-    const { error } = await supabaseTyped
+    const { error } = await supabase
       .from('products')
       .select('id')
       .limit(1);
@@ -399,7 +440,7 @@ export const getTableCounts = async () => {
       items: itemsResult.count || 0
     };
   } catch (error) {
-    console.error('Error getting table counts:', error);
+    logger.error('Error getting table counts:', error);
     return { products: 0, shipments: 0, items: 0 };
   }
 };
@@ -564,5 +605,161 @@ export const purchaseOrderItemsApi = {
       .eq('id', id);
 
     if (error) throw error;
+  }
+};
+
+// =====================================================
+// SUPPLIERS API
+// =====================================================
+
+export const suppliersApi = {
+  // Get all suppliers
+  async getAll(): Promise<Supplier[]> {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error loading suppliers:', error);
+      throw error;
+    }
+    return data || [];
+  },
+
+  // Get supplier by ID
+  async getById(id: string): Promise<Supplier | null> {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      logger.error('Error loading supplier:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  // Create supplier
+  async create(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>): Promise<Supplier> {
+    const userId = await getUserId();
+    
+    const { data, error } = await supabase
+      .from('suppliers')
+      .insert([{ ...supplier, user_id: userId }])
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error creating supplier:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  // Update supplier
+  async update(id: string, supplier: Partial<Supplier>): Promise<void> {
+    const { error } = await supabase
+      .from('suppliers')
+      .update(supplier)
+      .eq('id', id);
+
+    if (error) {
+      logger.error('Error updating supplier:', error);
+      throw error;
+    }
+  },
+
+  // Delete supplier
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('suppliers')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      logger.error('Error deleting supplier:', error);
+      throw error;
+    }
+  }
+};
+
+// =====================================================
+// CATEGORIES API
+// =====================================================
+
+export const categoriesApi = {
+  // Get all categories
+  async getAll(): Promise<Category[]> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) {
+      logger.error('Error loading categories:', error);
+      throw error;
+    }
+    return data || [];
+  },
+
+  // Get category by ID
+  async getById(id: string): Promise<Category> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      logger.error('Error loading category:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  // Create category
+  async create(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> {
+    const userId = await getUserId();
+    
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([{ ...category, user_id: userId }])
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error creating category:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  // Update category
+  async update(id: string, category: Partial<Category>): Promise<void> {
+    const { error } = await supabase
+      .from('categories')
+      .update(category)
+      .eq('id', id);
+
+    if (error) {
+      logger.error('Error updating category:', error);
+      throw error;
+    }
+  },
+
+  // Delete category
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      logger.error('Error deleting category:', error);
+      throw error;
+    }
   }
 };

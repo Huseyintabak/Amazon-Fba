@@ -28,8 +28,8 @@ const PurchaseOrderDetail: React.FC = () => {
       // Load items separately
       const itemsData = await purchaseOrderItemsApi.getByPOId(id!);
       setItems(itemsData || []);
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
       navigate('/purchase-orders');
     } finally {
       setIsLoading(false);
@@ -42,8 +42,8 @@ const PurchaseOrderDetail: React.FC = () => {
       await purchaseOrdersApi.update(id!, { status: newStatus as any });
       showToast('Durum güncellendi', 'success');
       loadPO();
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -55,8 +55,8 @@ const PurchaseOrderDetail: React.FC = () => {
       await purchaseOrdersApi.update(id!, { payment_status: newStatus as any });
       showToast('Ödeme durumu güncellendi', 'success');
       loadPO();
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -67,8 +67,8 @@ const PurchaseOrderDetail: React.FC = () => {
       await purchaseOrderItemsApi.update(itemId, { received_quantity: receivedQty });
       showToast('Teslim alım güncellendi', 'success');
       loadPO();
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 

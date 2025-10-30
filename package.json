@@ -1,18 +1,23 @@
 {
-  "name": "amazon-fba-tracker",
+  "name": "planet-fba-tracker",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://huseyintabak.github.io/Amazon-Fba",
+  "homepage": "https://huseyintabak.github.io/Planet-FBA-Tracker",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:server": "tsc -b && vite build --config vite.config.server.ts",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@heroicons/react": "^2.2.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@supabase/supabase-js": "^2.76.1",
     "class-variance-authority": "^0.7.1",
@@ -33,18 +38,27 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
     "@vitejs/plugin-react": "^3.1.0",
+    "@vitest/coverage-v8": "^4.0.4",
+    "@vitest/ui": "^4.0.3",
     "autoprefixer": "^10.4.14",
     "eslint": "^8.38.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.3.4",
+    "jsdom": "^27.0.1",
     "postcss": "^8.4.21",
     "tailwindcss": "^3.3.0",
     "typescript": "^5.0.2",
-    "vite": "^4.3.2"
+    "vite": "^4.3.2",
+    "vitest": "^4.0.3"
   }
 }

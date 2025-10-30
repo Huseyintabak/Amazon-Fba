@@ -1,26 +1,22 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from 'recharts';
-import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useStore } from '../stores/useStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
+import { useCache, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
+import { productsApi, shipmentsApi } from '../lib/supabaseApi';
 import WelcomeModal from '../components/WelcomeModal';
+import { StatCard } from './Dashboard/components/StatCard';
+import { MonthlyChart } from './Dashboard/components/MonthlyChart';
 
 const Dashboard: React.FC = () => {
-  const { products, shipments, loadAllData } = useSupabaseStore();
+  const { products, shipments } = useStore();
   const { user, profile } = useAuth();
   const { redirectToUpgrade, isFreeUser } = useUpgradeRedirect();
   const [showWelcome, setShowWelcome] = useState(false);
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
   const [roiSummary, setROISummary] = useState({ totalProfit: 0, avgROI: 0, topProduct: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
   // Filter shipments by date range
   const filteredShipments = useMemo(() => {
@@ -132,10 +128,10 @@ const Dashboard: React.FC = () => {
     };
   }, [filteredProducts, products, shipments, dateRange]);
 
-  // Load all data on component mount
+  // Simple data loading - no complex caching for now
   useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
+    setIsLoading(false); // Just set loading to false, data will come from store
+  }, []);
 
   // Show welcome modal for new users
   useEffect(() => {
@@ -200,37 +196,18 @@ const Dashboard: React.FC = () => {
     return labels[dateRange];
   };
 
-  const StatCard: React.FC<{
-    title: string;
-    value: string | number;
-    icon: string;
-    trend?: number;
-    subtitle?: string;
-    color: string;
-  }> = ({ title, value, icon, trend, subtitle, color }) => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className={`text-3xl font-bold ${color} mb-2`}>{value}</p>
-          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
-          {trend !== undefined && (
-            <div className={`inline-flex items-center text-xs font-semibold mt-2 px-2 py-1 rounded-full ${
-              trend >= 0 
-                ? 'bg-green-50 text-green-700' 
-                : 'bg-red-50 text-red-700'
-            }`}>
-              <span className="mr-1">{trend >= 0 ? '↑' : '↓'}</span>
-              {Math.abs(trend).toFixed(1)}% vs {getTrendLabel()}
-            </div>
-          )}
-        </div>
-        <div className={`w-14 h-14 rounded-xl ${color.replace('text-', 'bg-').replace('600', '50')} flex items-center justify-center`}>
-          <span className="text-3xl">{icon}</span>
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Dashboard yükleniyor...</p>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <>
@@ -266,6 +243,7 @@ const Dashboard: React.FC = () => {
             value={filteredProducts.length}
             icon="📦"
             trend={enhancedStats.productTrend}
+            trendLabel={getTrendLabel()}
             color="text-blue-600"
           />
           <StatCard
@@ -273,6 +251,7 @@ const Dashboard: React.FC = () => {
             value={filteredShipments.length}
             icon="🚚"
             trend={enhancedStats.shipmentTrend}
+            trendLabel={getTrendLabel()}
             color="text-green-600"
           />
           <StatCard
@@ -320,62 +299,7 @@ const Dashboard: React.FC = () => {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Monthly Performance */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-900">Aylık Performans</h3>
-              <p className="text-sm text-gray-500 mt-1">Sevkiyat ve maliyet trendi</p>
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData}>
-                  <defs>
-                    <linearGradient id="colorShipments" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#FFF', 
-                      border: '1px solid #E5E7EB', 
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value: any, name: string) => {
-                      if (name === 'cost') return [`$${value.toFixed(2)}`, 'Toplam Maliyet'];
-                      if (name === 'shipments') return [value, 'Sevkiyat'];
-                      return [value, name];
-                    }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="shipments" 
-                    stroke="#3B82F6" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorShipments)" 
-                    name="Sevkiyat"
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="cost" 
-                    stroke="#10B981" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorCost)" 
-                    name="Maliyet"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          <MonthlyChart data={monthlyData} />
 
           {/* Top Products by Profit */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

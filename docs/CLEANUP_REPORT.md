@@ -31,7 +31,6 @@
 
 ### **Old Deployment Scripts (9 adet)**
 - ✅ `deploy.sh`
-- ✅ `docker-deploy.sh`
 - ✅ `server-deploy.sh`
 - ✅ `update.sh`
 - ✅ `install-dependencies.sh`

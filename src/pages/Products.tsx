@@ -1,27 +1,32 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '../contexts/ToastContext';
-import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useStore } from '../stores/useStore';
 import { supabase } from '../lib/supabase';
 import { useSubscription } from '../hooks/useSubscription';
 import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
 import { useBulkSelection } from '../hooks/useBulkSelection';
+import { useSearch } from '../hooks/useSearch';
 // import { useFilterPresets } from '../hooks/useFilterPresets';
-import { Product } from '../types';
+import { Product, Category } from '../types';
 import { processCSVFile, getCSVTemplate } from '../lib/csvImport';
 import { exportProductsForUpdate } from '../lib/csvExport';
 import { AdvancedFilters } from '../components/AdvancedFiltersPanel';
 import UsageBanner from '../components/UsageBanner';
 import UpgradeModal from '../components/UpgradeModal';
+import ProductModal from './Products/components/ProductModal';
 import BulkOperations from '../components/BulkOperations';
 import ProductPerformanceAnalyzer from '../components/ProductPerformanceAnalyzer';
 import PriceOptimizerButton from '../components/PriceOptimizerButton';
 import ProductLimitBlur from '../components/ProductLimitBlur';
 import ResizableTable from '../components/ResizableTable';
+import Pagination from '../components/Pagination';
 import { validateProduct } from '../lib/validation';
+import CategoryManager from '../components/CategoryManager';
+import ImageUpload from '../components/ImageUpload';
 
 const Products: React.FC = () => {
   const { showToast } = useToast();
-  const { products, addProduct, updateProduct, deleteProduct, loadProducts } = useSupabaseStore();
+  const { addProduct, updateProduct, deleteProduct } = useStore();
   const { canCreateProduct, hasFeature } = useSubscription();
   const { redirectToUpgrade, isFreeUser } = useUpgradeRedirect();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -36,94 +41,158 @@ const Products: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const csvFileInputRef = useRef<HTMLInputElement>(null);
   const [csvImportResults, setCsvImportResults] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
+  const [importMode, setImportMode] = useState<'create' | 'update'>('create');
   const [sortField, setSortField] = useState<keyof Product>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  
+  // Category and image management
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
-  // Load products on mount
-  React.useEffect(() => {
+  // Simple state management
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const pagination = {
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    totalItems,
+    hasNextPage: currentPage < totalPages,
+    hasPreviousPage: currentPage > 1,
+    startIndex: (currentPage - 1) * itemsPerPage,
+    endIndex: Math.min((currentPage - 1) * itemsPerPage + itemsPerPage - 1, totalItems - 1),
+  };
+
+  // Load products function
+  const loadProducts = useCallback(async () => {
+    setProductsLoading(true);
+    setProductsError(null);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Kullanıcı bulunamadı');
+
+      // Check if user is admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          suppliers!left(name, country),
+          categories!left(name, color, icon)
+        `, { count: 'exact' });
+
+      // Only filter by user_id if not admin
+      if (!profile?.is_admin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      // Apply search filter
+      if (filters.search) {
+        const searchTerm = filters.search.trim();
+        if (searchTerm.length >= 2) {
+          const searchLower = searchTerm.toLowerCase();
+          query = query.or(`name.ilike.%${searchLower}%,asin.ilike.%${searchLower}%,merchant_sku.ilike.%${searchLower}%,suppliers.name.ilike.%${searchLower}%`);
+        }
+      }
+
+      if (filters.supplier) {
+        query = query.eq('supplier_id', filters.supplier);
+      }
+
+      if (filters.costRange?.min !== undefined) {
+        query = query.gte('product_cost', filters.costRange.min);
+      }
+
+      if (filters.costRange?.max !== undefined) {
+        query = query.lte('product_cost', filters.costRange.max);
+      }
+
+      if (filters.dateRange?.startDate) {
+        query = query.gte('created_at', filters.dateRange.startDate);
+      }
+
+      if (filters.dateRange?.endDate) {
+        query = query.lte('created_at', filters.dateRange.endDate);
+      }
+
+      // Apply sorting
+      query = query.order(sortField, { ascending: sortDirection === 'asc' });
+
+      // Apply pagination
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      // Transform data to include supplier info
+      const transformedData = data?.map(product => ({
+        ...product,
+        supplier_name: product.suppliers?.name || '',
+        supplier_country: product.suppliers?.country || ''
+      })) || [];
+
+      setProducts(transformedData);
+      setTotalItems(count || 0);
+    } catch (error: unknown) {
+      console.error('Error loading products:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setProductsError(errorMessage);
+      showToast(`Ürünler yüklenemedi: ${errorMessage}`, 'error');
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [currentPage, itemsPerPage, filters, sortField, sortDirection, showToast]);
+
+  // Load products on mount and when dependencies change
+  useEffect(() => {
     loadProducts();
   }, [loadProducts]);
 
-  // Filter and sort products
-  const filteredProducts = useMemo(() => {
-    let filtered = products;
+  // Simple functions
+  const refreshProducts = useCallback(() => {
+    loadProducts();
+  }, [loadProducts]);
 
-    // Apply filters
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchLower) ||
-        product.asin?.toLowerCase().includes(searchLower) ||
-        product.merchant_sku?.toLowerCase().includes(searchLower) ||
-        product.supplier_name?.toLowerCase().includes(searchLower)
-      );
+  const goToPage = useCallback((page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
     }
+  }, [totalPages]);
 
-    if (filters.supplier && filters.supplier !== 'all') {
-      filtered = filtered.filter(product => product.supplier_id === filters.supplier);
-    }
+  // Search with debounce
+  const searchProducts = useCallback(async () => {
+    // This will trigger the pagination reload
+    return [];
+  }, []);
 
-    if (filters.minProfit !== undefined) {
-      filtered = filtered.filter(product => (product.estimated_profit || 0) >= filters.minProfit!);
-    }
+  const { handleSearch, clearSearch } = useSearch(searchProducts, {
+    debounceMs: 300,
+    minLength: 2
+  });
 
-    if (filters.maxProfit !== undefined) {
-      filtered = filtered.filter(product => (product.estimated_profit || 0) <= filters.maxProfit!);
-    }
+  // Search input handler
+  const handleSearchInput = (value: string) => {
+    setFilters({ ...filters, search: value });
+    handleSearch(value);
+    // Reset to first page when search changes
+    goToPage(1);
+  };
 
-    if (filters.minROI !== undefined) {
-      filtered = filtered.filter(product => (product.roi_percentage || 0) >= filters.minROI!);
-    }
-
-    if (filters.maxROI !== undefined) {
-      filtered = filtered.filter(product => (product.roi_percentage || 0) <= filters.maxROI!);
-    }
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter(product => 
-        new Date(product.created_at) >= new Date(filters.dateFrom!)
-      );
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter(product => 
-        new Date(product.created_at) <= new Date(filters.dateTo!)
-      );
-    }
-
-    // Sort products
-    filtered.sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-      
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      
-      return 0;
-    });
-
-    return filtered;
-  }, [products, filters, sortField, sortDirection]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+  // Sort handler
   const handleSort = (field: keyof Product) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -131,7 +200,33 @@ const Products: React.FC = () => {
       setSortField(field);
       setSortDirection('asc');
     }
+    // Reset to first page when sorting changes
+    goToPage(1);
   };
+
+  // Loading state
+  if (productsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (productsError) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">Hata: {productsError}</p>
+        <button 
+          onClick={refreshProducts}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Tekrar Dene
+        </button>
+      </div>
+    );
+  }
+
 
   const getSortIcon = (field: keyof Product) => {
     if (sortField !== field) return '';
@@ -154,31 +249,202 @@ const Products: React.FC = () => {
     setShowAddModal(true);
   };
 
+  // Update Product Function for CSV Import
+  const updateProductLocal = async (productId: string, productData: Partial<Product>) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Kullanıcı bulunamadı');
+
+    const { error } = await supabase
+      .from('products')
+      .update({
+        ...productData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+  };
+
+  // CSV Import Functions
+  const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🚀 CSV Import başladı!', event.target.files);
+    
+    const file = event.target.files?.[0];
+    if (!file) {
+      console.log('❌ Dosya seçilmedi');
+      return;
+    }
+
+    console.log('📁 Seçilen dosya:', file.name, file.size, 'bytes');
+
+    try {
+      // Get fresh products data from database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Kullanıcı bulunamadı');
+
+      const { data: freshProducts, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      console.log('🔍 CSV Import Debug:', {
+        productsCount: freshProducts?.length || 0,
+        importMode,
+        firstProduct: freshProducts?.[0]?.asin
+      });
+      
+      const result = await processCSVFile(file, freshProducts || [], importMode === 'update');
+      
+      if (result.success && (result.products.length > 0 || result.updates.length > 0)) {
+        let successCount = 0;
+        let failedCount = 0;
+        const errors: string[] = [];
+
+        // Handle new products (create mode)
+        if (importMode === 'create' && result.products.length > 0) {
+          for (const productData of result.products) {
+            try {
+              await addProduct(productData as Product);
+              successCount++;
+            } catch (error) {
+              failedCount++;
+              errors.push(`Ürün eklenemedi: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+            }
+          }
+        }
+
+        // Handle updates (update mode)
+        if (importMode === 'update' && result.updates.length > 0) {
+          for (const productData of result.updates) {
+            try {
+              console.log('🔄 Updating product:', {
+                id: productData.id,
+                asin: productData.asin,
+                name: productData.name
+              });
+              
+              await updateProductLocal(productData.id!, productData as Product);
+              successCount++;
+            } catch (error) {
+              failedCount++;
+              console.error('❌ Update error:', error);
+              errors.push(`Ürün güncellenemedi: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+            }
+          }
+        }
+
+        setCsvImportResults({
+          success: successCount,
+          failed: failedCount,
+          errors: [...result.errors, ...errors]
+        });
+
+        if (successCount > 0) {
+          const action = importMode === 'create' ? 'eklendi' : 'güncellendi';
+          console.log(`🎉 ${successCount} ürün başarıyla ${action}!`);
+          showToast(`${successCount} ürün başarıyla ${action}!`, 'success');
+          
+          console.log('🔄 Ürün listesi yenileniyor...');
+          await loadProducts(); // Refresh the list
+          console.log('✅ Ürün listesi yenilendi!');
+          
+          // Close modal after successful import
+          setTimeout(() => {
+            console.log('🚪 Modal kapatılıyor...');
+            setShowImportModal(false);
+            setCsvImportResults(null);
+            setImportMode('create');
+          }, 1000); // 1 saniye bekle, sonra kapat
+        }
+      } else {
+        setCsvImportResults({
+          success: 0,
+          failed: result.products.length + result.updates.length,
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error('💥 CSV Import hatası:', error);
+      setCsvImportResults({
+        success: 0,
+        failed: 1,
+        errors: [`Dosya işlenirken hata: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`]
+      });
+    }
+
+    // Reset file input
+    if (csvFileInputRef.current) {
+      csvFileInputRef.current.value = '';
+    }
+  };
+
+  const downloadCSVTemplate = () => {
+    const template = getCSVTemplate();
+    const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'urun_sablonu.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExport = () => {
+    if (products.length === 0) {
+      showToast('Dışa aktarılacak ürün bulunamadı', 'warning');
+      return;
+    }
+
+    try {
+      exportProductsForUpdate(products);
+      showToast(`${products.length} ürün CSV olarak dışa aktarıldı!`, 'success');
+    } catch (error) {
+      showToast(`Dışa aktarma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`, 'error');
+    }
+  };
+
   const handleDelete = async (product: Product) => {
     try {
       await deleteProduct(product.id);
       showToast('Ürün başarıyla silindi', 'success');
       setShowDeleteModal(null);
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`, 'error');
     }
   };
 
   const handleSubmit = async (productData: Partial<Product>) => {
     try {
+      console.log('handleSubmit called with:', productData);
       if (editingProduct) {
-        await updateProduct(editingProduct.id, productData);
-        await loadProducts(); // Sayfayı yenile
-        showToast('Ürün başarıyla güncellendi', 'success');
+        console.log('Updating product:', editingProduct.id, 'with data:', productData);
+        const updatedProduct = await updateProduct(editingProduct.id, productData);
+        console.log('Updated product received:', updatedProduct);
+        
+        if (updatedProduct) {
+          // State'i direkt güncelle
+          setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...updatedProduct } : p));
+          showToast('Ürün başarıyla güncellendi', 'success');
+        } else {
+          console.error('Updated product is undefined');
+          showToast('Ürün güncellenemedi', 'error');
+        }
       } else {
-        await addProduct(productData as any);
-        await loadProducts(); // Sayfayı yenile
+        const newProduct = await addProduct(productData as any);
+        // State'e yeni ürünü ekle
+        setProducts(prev => [newProduct, ...prev]);
         showToast('Ürün başarıyla eklendi', 'success');
       }
       setShowAddModal(false);
       setEditingProduct(null);
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      console.error('handleSubmit error:', error);
+      showToast(`Hata: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`, 'error');
     }
   };
 
@@ -192,11 +458,11 @@ const Products: React.FC = () => {
         updateProduct(product.id, updates)
       );
       await Promise.all(promises);
-      await loadProducts(); // Auto-refresh after bulk edit
+      await refreshProducts(); // Auto-refresh after bulk edit
       showToast(`${selectedProducts.length} ürün güncellendi`, 'success');
       bulkSelection.clearSelection();
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`, 'error');
     }
   };
 
@@ -212,19 +478,16 @@ const Products: React.FC = () => {
         deleteProduct(product.id)
       );
       await Promise.all(promises);
-      await loadProducts(); // Auto-refresh after bulk delete
+      await refreshProducts(); // Auto-refresh after bulk delete
       showToast(`${selectedProducts.length} ürün silindi`, 'success');
       bulkSelection.clearSelection();
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`, 'error');
     }
   };
 
   const handleImport = () => {
-    if (!hasFeature('csvExport')) {
-      redirectToUpgrade('CSV İçe Aktar');
-      return;
-    }
+    // CSV Import is now available for all users
     setShowImportModal(true);
   };
 
@@ -237,7 +500,7 @@ const Products: React.FC = () => {
         if (results.updates && results.updates.length > 0) {
           const updatePromises = results.updates.map(product => updateProduct(product.id, product));
           await Promise.all(updatePromises);
-          await loadProducts(); // Refresh the list
+          await refreshProducts(); // Refresh the list
         }
         
         setCsvImportResults({
@@ -252,7 +515,7 @@ const Products: React.FC = () => {
         if (results.products && results.products.length > 0) {
           const createPromises = results.products.map(product => addProduct(product));
           await Promise.all(createPromises);
-          await loadProducts(); // Refresh the list
+          await refreshProducts(); // Refresh the list
         }
         
         setCsvImportResults({
@@ -263,8 +526,8 @@ const Products: React.FC = () => {
         
         showToast(`CSV içe aktarma tamamlandı: ${results.products ? results.products.length : 0} başarılı, ${results.errors.length} başarısız`, 'success');
       }
-    } catch (error: any) {
-      showToast(`CSV işleme hatası: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`CSV işleme hatası: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`, 'error');
     }
   };
 
@@ -323,6 +586,13 @@ const Products: React.FC = () => {
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <button
+            onClick={() => setShowCategoryManager(true)}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <span>🏷️</span>
+            <span>Kategori Yönetimi</span>
+          </button>
+          <button
             onClick={handleAdd}
             className="btn-primary flex items-center space-x-2"
           >
@@ -335,11 +605,13 @@ const Products: React.FC = () => {
           >
             <span>📥</span>
             <span>CSV İçe Aktar</span>
-            {isFreeUser && (
-              <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                🔒 Pro
-              </span>
-            )}
+          </button>
+          <button
+            onClick={handleExport}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <span>📤</span>
+            <span>CSV Dışa Aktar</span>
           </button>
         </div>
       </div>
@@ -350,13 +622,16 @@ const Products: React.FC = () => {
           <input
             type="text"
             value={filters.search || ''}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            onChange={(e) => handleSearchInput(e.target.value)}
             placeholder="🔍 Ürün adı, ASIN, Merchant SKU veya tedarikçi adı ile ara..."
             className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           {filters.search && (
             <button
-              onClick={() => setFilters({ ...filters, search: '' })}
+              onClick={() => {
+                setFilters({ ...filters, search: '' });
+                clearSearch();
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               ✕
@@ -402,17 +677,12 @@ const Products: React.FC = () => {
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              Ürünler ({filteredProducts.length})
+              Ürünler ({pagination.totalItems})
             </h2>
             <div className="flex items-center space-x-4">
               {Object.keys(filters).length > 0 && (
                 <span className="text-sm text-gray-500">
                   {Object.keys(filters).length} filtre aktif
-                </span>
-              )}
-              {totalPages > 1 && (
-                <span className="text-sm text-gray-500">
-                  Sayfa {currentPage}/{totalPages}
                 </span>
               )}
             </div>
@@ -427,13 +697,16 @@ const Products: React.FC = () => {
                 <th className="table-header-cell w-12">
                   <input
                     type="checkbox"
-                    checked={bulkSelection.isAllSelected(paginatedProducts)}
-                    onChange={() => bulkSelection.toggleAll(paginatedProducts)}
+                    checked={bulkSelection.isAllSelected(products)}
+                    onChange={() => bulkSelection.toggleAll(products)}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                     title="Tümünü seç/kaldır"
                   />
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '200px', maxWidth: '200px' }}>
+                <th className="table-header-cell">
+                  <span>Resim</span>
+                </th>
+                <th className="table-header-cell">
                   <button
                     onClick={() => handleSort('name')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -442,7 +715,10 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('name')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
+                <th className="table-header-cell">
+                  <span>Kategori</span>
+                </th>
+                <th className="table-header-cell">
                   <button
                     onClick={() => handleSort('asin')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -451,7 +727,7 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('asin')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '90px', maxWidth: '90px' }}>
+                <th className="table-header-cell">
                   <button
                     onClick={() => handleSort('merchant_sku')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -460,7 +736,7 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('merchant_sku')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
+                <th className="table-header-cell">
                   <button
                     onClick={() => handleSort('supplier_name')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -469,7 +745,7 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('supplier_name')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
+                <th className="table-header-cell">
                   <button
                     onClick={() => handleSort('product_cost')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -478,7 +754,7 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('product_cost')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
+                <th className="table-header-cell">
                   <button
                     onClick={() => handleSort('estimated_profit')}
                     className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
@@ -487,30 +763,12 @@ const Products: React.FC = () => {
                     <span className="text-sm">{getSortIcon('estimated_profit')}</span>
                   </button>
                 </th>
-                <th className="table-header-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
-                  <button
-                    onClick={() => handleSort('roi_percentage')}
-                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                  >
-                    <span>ROI %</span>
-                    <span className="text-sm">{getSortIcon('roi_percentage')}</span>
-                  </button>
-                </th>
-                <th className="table-header-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
-                  <button
-                    onClick={() => handleSort('created_at')}
-                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                  >
-                    <span>Oluşturulma</span>
-                    <span className="text-sm">{getSortIcon('created_at')}</span>
-                  </button>
-                </th>
                 <th className="table-header-cell" style={{ minWidth: '120px', maxWidth: '120px' }}>İşlemler</th>
               </tr>
             </thead>
             <tbody className="table-body">
-              <ProductLimitBlur currentCount={products.length} limit={10}>
-              {paginatedProducts.map((product) => (
+              <ProductLimitBlur currentCount={pagination.totalItems} limit={10}>
+              {products.map((product) => (
                   <tr 
                     key={product.id} 
                     className={`table-row ${bulkSelection.isSelected(product.id) ? 'bg-blue-50' : ''}`}
@@ -523,7 +781,20 @@ const Products: React.FC = () => {
                         className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                       />
                     </td>
-                    <td className="table-cell" style={{ minWidth: '200px', maxWidth: '200px' }}>
+                    <td className="table-cell">
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded border"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded border flex items-center justify-center text-gray-400 text-xs">
+                          📷
+                        </div>
+                      )}
+                    </td>
+                    <td className="table-cell">
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-gray-900 truncate text-sm" title={product.name}>
                           {product.name}
@@ -535,17 +806,34 @@ const Products: React.FC = () => {
                         )}
                     </div>
                   </td>
-                    <td className="table-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
+                    <td className="table-cell">
+                      {product.category ? (
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-white text-xs"
+                            style={{ backgroundColor: product.category.color }}
+                          >
+                            {product.category.icon}
+                          </div>
+                          <span className="text-sm text-gray-900 truncate">
+                            {product.category.name}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="table-cell">
                       <code className="bg-gray-100 px-1 py-1 rounded text-xs font-mono block truncate" title={product.asin}>
                       {product.asin}
                     </code>
                   </td>
-                    <td className="table-cell" style={{ minWidth: '90px', maxWidth: '90px' }}>
+                    <td className="table-cell">
                       <code className="bg-gray-100 px-1 py-1 rounded text-xs font-mono block truncate" title={product.merchant_sku}>
                       {product.merchant_sku}
                     </code>
                   </td>
-                    <td className="table-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
+                    <td className="table-cell">
                       {product.supplier_name ? (
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900 truncate text-sm">
@@ -561,7 +849,7 @@ const Products: React.FC = () => {
                         <span className="text-xs text-gray-400">-</span>
                     )}
                   </td>
-                    <td className="table-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
+                    <td className="table-cell">
                     {product.product_cost ? (
                       <span className="font-semibold text-green-600">
                         ${product.product_cost.toFixed(2)}
@@ -570,7 +858,7 @@ const Products: React.FC = () => {
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                    <td className="table-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
+                    <td className="table-cell">
                       {product.estimated_profit !== undefined && product.estimated_profit !== null ? (
                         <div className="flex flex-col">
                           <span className={`font-bold ${product.estimated_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -584,21 +872,7 @@ const Products: React.FC = () => {
                         <span className="text-xs text-gray-400">Hesaplanmadı</span>
                       )}
                     </td>
-                    <td className="table-cell" style={{ minWidth: '80px', maxWidth: '80px' }}>
-                      {product.roi_percentage ? (
-                        <span className={`font-semibold ${product.roi_percentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {product.roi_percentage.toFixed(1)}%
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="table-cell" style={{ minWidth: '100px', maxWidth: '100px' }}>
-                    <div className="text-sm text-gray-500">
-                      {new Date(product.created_at).toLocaleDateString('tr-TR')}
-                    </div>
-                  </td>
-                    <td className="table-cell" style={{ minWidth: '120px', maxWidth: '120px' }}>
+                    <td className="table-cell">
                       <div className="flex flex-col space-y-2">
                     <div className="flex items-center space-x-2">
                       <button
@@ -629,32 +903,18 @@ const Products: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {pagination.totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                {filteredProducts.length} üründen {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredProducts.length)} arası gösteriliyor
-              </div>
-              <div className="flex items-center space-x-2">
-              <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Önceki
-              </button>
-                <span className="text-sm text-gray-700">
-                  {currentPage} / {totalPages}
-                </span>
-              <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Sonraki
-              </button>
-            </div>
-            </div>
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.totalItems}
+              itemsPerPage={pagination.itemsPerPage}
+              onPageChange={goToPage}
+              onItemsPerPageChange={setItemsPerPage}
+              loading={productsLoading}
+              showItemsPerPage={true}
+            />
           </div>
         )}
       </div>
@@ -667,7 +927,27 @@ const Products: React.FC = () => {
             setShowAddModal(false);
             setEditingProduct(null);
           }}
-          onSuccess={handleSubmit}
+          onSuccess={async (productData) => {
+            console.log('🎯 ProductModal onSuccess called with:', productData);
+            try {
+              if (editingProduct) {
+                // Update existing product
+                console.log('🔄 Updating product:', editingProduct.id);
+                await updateProduct(editingProduct.id, productData);
+                showToast('Ürün başarıyla güncellendi!', 'success');
+              } else {
+                // Add new product
+                console.log('➕ Adding new product');
+                await addProduct(productData as Omit<Product, 'id' | 'updated_at' | 'created_at' | 'user_id'>);
+                showToast('Ürün başarıyla eklendi!', 'success');
+              }
+              console.log('🔄 Loading products...');
+              loadProducts();
+            } catch (error) {
+              console.error('💥 ProductModal onSuccess error:', error);
+              showToast(`Hata: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`, 'error');
+            }
+          }}
         />
       )}
 
@@ -700,156 +980,179 @@ const Products: React.FC = () => {
       {/* CSV Import Modal */}
       {showImportModal && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-2xl">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">CSV İçe Aktar</h3>
-            
-            <div className="space-y-4">
-              {/* Import Mode Selection */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-3">📋 İşlem Modu</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="importMode"
-                      value="create"
-                      defaultChecked
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">Yeni Ürün Ekle</div>
-                      <div className="text-sm text-gray-600">CSV'deki ürünleri yeni olarak ekler</div>
-                    </div>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="importMode"
-                      value="update"
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">Mevcut Ürünleri Güncelle</div>
-                      <div className="text-sm text-gray-600">ASIN/SKU ile eşleşen ürünleri günceller</div>
-                      <div className="text-xs text-orange-600 mt-1">
-                        💡 Önce "Mevcut Ürünleri Export Et" ile CSV indirin, düzenleyin, sonra import edin
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">📋 CSV Formatı</h4>
-                <p className="text-sm text-blue-700 mb-2">
-                  CSV dosyanızda şu sütunlar bulunmalıdır:
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h5 className="font-medium text-blue-800 mb-2">Temel Alanlar:</h5>
-                    <ul className="text-xs text-blue-600 list-disc list-inside space-y-1">
-                      <li>Ürün Adı - Zorunlu</li>
-                      <li>ASIN - Opsiyonel</li>
-                      <li>Merchant SKU - Opsiyonel</li>
-                      <li>Ürün Maliyeti - Opsiyonel</li>
-                      <li>Amazon Barkod - Opsiyonel</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-purple-800 mb-2">🔒 Premium Alanlar:</h5>
-                    <ul className="text-xs text-purple-600 list-disc list-inside space-y-1">
-                      <li>Amazon Fiyatı ($)</li>
-                      <li>Referans Ücreti (%)</li>
-                      <li>Fulfillment Ücreti ($)</li>
-                      <li>Reklam Maliyeti ($)</li>
-                      <li>İlk Yatırım ($)</li>
-                      <li>Tedarikçi Adı</li>
-                      <li>Tedarikçi Ülkesi</li>
-                      <li>Notlar</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+          <div className="modal-content max-w-4xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">CSV İçe Aktar</h3>
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setCsvImportResults(null);
+                  setImportMode('create');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
 
-              <div className="flex items-center space-x-4">
-                <input
-                  ref={csvFileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const importMode = (document.querySelector('input[name="importMode"]:checked') as HTMLInputElement)?.value === 'update';
-                      handleCSVUpload(file, importMode);
-                    }
-                  }}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => csvFileInputRef.current?.click()}
-                  className="btn-primary flex items-center space-x-2"
-                >
-                  <span>📁</span>
-                  <span>Dosya Seç</span>
-                </button>
-                <button
-                  onClick={handleDownloadTemplate}
-                  className="btn-secondary flex items-center space-x-2"
-                >
-                  <span>📥</span>
-                  <span>Template İndir</span>
-                </button>
-                <button
-                  onClick={() => exportProductsForUpdate(products)}
-                  className="btn-primary flex items-center space-x-2"
-                >
-                  <span>📤</span>
-                  <span>Mevcut Ürünleri Export Et</span>
-                </button>
-              </div>
-
-              {csvImportResults && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-green-900 mb-1">✅ Başarılı</h4>
-                      <p className="text-2xl font-bold text-green-600">{csvImportResults.success}</p>
-                    </div>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-red-900 mb-1">❌ Başarısız</h4>
-                      <p className="text-2xl font-bold text-red-600">{csvImportResults.failed}</p>
-                    </div>
+            {!csvImportResults ? (
+              <div className="space-y-6">
+                {/* Import Mode Selection */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">🎯 İşlem Türü</h4>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="create"
+                        checked={importMode === 'create'}
+                        onChange={(e) => setImportMode(e.target.value as 'create' | 'update')}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm font-medium">➕ Yeni Ürün Ekle</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="update"
+                        checked={importMode === 'update'}
+                        onChange={(e) => setImportMode(e.target.value as 'create' | 'update')}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm font-medium">✏️ Mevcut Ürünleri Güncelle</span>
+                    </label>
                   </div>
-
-                  {csvImportResults.errors.length > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-red-900 mb-2">Hata Detayları</h4>
-                      <div className="max-h-32 overflow-y-auto">
-                        {csvImportResults.errors.map((error, index) => (
-                          <p key={index} className="text-sm text-red-700 mb-1">
-                            {error}
-                          </p>
-                        ))}
-                      </div>
+                  {importMode === 'update' && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-800 text-sm">
+                        <strong>⚠️ Güncelleme Modu:</strong> ASIN veya Merchant SKU ile mevcut ürünleri bulup güncelleyecek. 
+                        Bulunamayan ürünler için hata verilecek.
+                      </p>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => {
-          setShowImportModal(false);
-                  setCsvImportResults(null);
-                }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Kapat
-              </button>
-            </div>
+                {/* Instructions */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">📋 CSV Formatı</h4>
+                  <p className="text-blue-800 text-sm mb-2">
+                    CSV dosyanızda şu sütunlar bulunmalı:
+                  </p>
+                  <div className="text-xs text-blue-700 grid grid-cols-2 gap-1">
+                    <span>• Ürün Adı (zorunlu)</span>
+                    <span>• ASIN (zorunlu)</span>
+                    <span>• Merchant SKU (zorunlu)</span>
+                    <span>• Üretici</span>
+                    <span>• Üretici Kodu</span>
+                    <span>• Amazon Barkod</span>
+                    <span>• Ürün Maliyeti</span>
+                    <span>• Tedarikçi Adı</span>
+                    <span>• Tedarikçi Ülkesi</span>
+                    <span>• Amazon Fiyatı</span>
+                    <span>• Referans Ücreti</span>
+                    <span>• Fulfillment Ücreti</span>
+                    <span>• Reklam Maliyeti</span>
+                    <span>• İlk Yatırım</span>
+                  </div>
+                </div>
+
+                {/* File Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    ref={csvFileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCSVImport}
+                    className="hidden"
+                  />
+                  <div className="text-gray-500 mb-4">
+                    <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 mb-2">CSV dosyanızı seçin</p>
+                  <button
+                    onClick={() => csvFileInputRef.current?.click()}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Dosya Seç
+                  </button>
+                </div>
+
+                {/* Template Download */}
+                <div className="text-center">
+                  <p className="text-gray-600 mb-2">Örnek CSV şablonu indirin:</p>
+                  <button
+                    onClick={downloadCSVTemplate}
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 CSV Şablonu İndir
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Import Results */
+              <div className="space-y-4">
+                <div className={`p-4 rounded-lg ${csvImportResults.success > 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <h4 className={`font-semibold mb-2 ${csvImportResults.success > 0 ? 'text-green-900' : 'text-red-900'}`}>
+                    {csvImportResults.success > 0 ? '✅ İçe Aktarma Başarılı!' : '❌ İçe Aktarma Başarısız!'}
+                  </h4>
+                  <div className="text-sm">
+                    <p className={csvImportResults.success > 0 ? 'text-green-800' : 'text-red-800'}>
+                      Başarılı: {csvImportResults.success} ürün
+                    </p>
+                    <p className="text-red-800">
+                      Başarısız: {csvImportResults.failed} ürün
+                    </p>
+                  </div>
+                </div>
+
+                {csvImportResults.errors.length > 0 && (
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <h5 className="font-semibold text-red-900 mb-2">Hatalar:</h5>
+                    <div className="text-sm text-red-800 max-h-32 overflow-y-auto">
+                      {csvImportResults.errors.map((error, index) => (
+                        <p key={index} className="mb-1">• {error}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => {
+                      setShowImportModal(false);
+                      setCsvImportResults(null);
+                      setImportMode('create');
+                    }}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Kapat
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCsvImportResults(null);
+                      setImportMode('create');
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Yeni İçe Aktar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* Category Manager */}
+      <CategoryManager
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        mode="manage"
+      />
 
       {/* Upgrade Modal */}
       {showUpgradeModal && (
@@ -860,331 +1163,6 @@ const Products: React.FC = () => {
           feature={upgradeFeature}
         />
       )}
-    </div>
-  );
-};
-
-// Product Modal Component
-interface ProductModalProps {
-  product: Product | null;
-  onClose: () => void;
-  onSuccess: (product: Partial<Product>) => void;
-}
-
-const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSuccess }) => {
-  const { showToast } = useToast();
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    name: product?.name || '',
-    asin: product?.asin || '',
-    merchant_sku: product?.merchant_sku || '',
-    amazon_barcode: product?.amazon_barcode || '',
-    supplier_name: product?.supplier_name || '',
-    supplier_id: product?.supplier_id || '',
-    supplier_country: product?.supplier_country || '',
-    manufacturer_code: product?.manufacturer_code || '',
-    product_cost: product?.product_cost || '',
-    // Premium fields
-    amazon_price: product?.amazon_price || '',
-    referral_fee_percent: product?.referral_fee_percent || '',
-    fulfillment_fee: product?.fulfillment_fee || '',
-    advertising_cost: product?.advertising_cost || '',
-    initial_investment: product?.initial_investment || '',
-    notes: '',
-  });
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Load suppliers on component mount
-  useEffect(() => {
-    const loadSuppliers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('suppliers')
-          .select('id, name, company_name, country')
-          .order('name');
-        
-        if (error) throw error;
-        setSuppliers(data || []);
-      } catch (error: any) {
-        console.error('Tedarikçiler yüklenemedi:', error.message);
-      }
-    };
-
-    loadSuppliers();
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      setIsLoading(true);
-      
-      const productData = {
-        name: formData.name,
-        asin: formData.asin || undefined,
-        merchant_sku: formData.merchant_sku || undefined,
-        amazon_barcode: formData.amazon_barcode || undefined,
-        manufacturer_code: formData.manufacturer_code || undefined,
-        product_cost: formData.product_cost ? parseFloat(formData.product_cost.toString()) : undefined,
-        // Premium fields
-        amazon_price: formData.amazon_price ? parseFloat(formData.amazon_price.toString()) : undefined,
-        referral_fee_percent: formData.referral_fee_percent ? parseFloat(formData.referral_fee_percent.toString()) : undefined,
-        fulfillment_fee: formData.fulfillment_fee ? parseFloat(formData.fulfillment_fee.toString()) : undefined,
-        advertising_cost: formData.advertising_cost ? parseFloat(formData.advertising_cost.toString()) : undefined,
-        initial_investment: formData.initial_investment ? parseFloat(formData.initial_investment.toString()) : undefined,
-        // Supplier relationship
-        supplier_id: formData.supplier_id || undefined,
-      };
-
-
-      const validation = validateProduct(productData);
-    if (!validation.isValid) {
-        showToast(`Hata: ${validation.errors.join(', ')}`, 'error');
-      return;
-    }
-
-      await onSuccess(productData as any);
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content max-w-2xl">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">
-          {product ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}
-          </h3>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-              <label className="label required">Ürün Adı</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="input-field"
-              placeholder="Ürün adını girin"
-                required
-            />
-          </div>
-
-          <div>
-              <label className="label">ASIN</label>
-            <input
-              type="text"
-              value={formData.asin}
-              onChange={(e) => setFormData({ ...formData, asin: e.target.value })}
-                className="input-field"
-                placeholder="B01ABC123D"
-            />
-          </div>
-
-          <div>
-              <label className="label">Merchant SKU</label>
-            <input
-              type="text"
-              value={formData.merchant_sku}
-              onChange={(e) => setFormData({ ...formData, merchant_sku: e.target.value })}
-                className="input-field"
-                placeholder="SKU-123456"
-            />
-          </div>
-
-          <div>
-              <label className="label">Amazon Barkod</label>
-            <input
-              type="text"
-                value={formData.amazon_barcode}
-                onChange={(e) => setFormData({ ...formData, amazon_barcode: e.target.value })}
-              className="input-field"
-                placeholder="B08QCQYPFX"
-            />
-          </div>
-
-          <div>
-              <label className="label">Tedarikçi</label>
-              <select
-                value={formData.supplier_name}
-                onChange={(e) => {
-                  const selectedSupplier = suppliers.find(s => s.name === e.target.value);
-                  setFormData({ 
-                    ...formData, 
-                    supplier_name: e.target.value,
-                    supplier_id: selectedSupplier?.id || undefined,
-                    supplier_country: selectedSupplier?.country || ''
-                  });
-                }}
-                className="input-field"
-              >
-                <option value="">Tedarikçi seçin</option>
-                {suppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.name}>
-                    {supplier.name} {supplier.company_name && `(${supplier.company_name})`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="label">Tedarikçi Ülkesi</label>
-            <input
-              type="text"
-                value={formData.supplier_country}
-                onChange={(e) => setFormData({ ...formData, supplier_country: e.target.value })}
-              className="input-field"
-                placeholder="Tedarikçi seçildiğinde otomatik doldurulur"
-                readOnly
-            />
-          </div>
-
-          <div>
-              <label className="label">Üretici Kodu</label>
-            <input
-              type="text"
-                value={formData.manufacturer_code}
-                onChange={(e) => setFormData({ ...formData, manufacturer_code: e.target.value })}
-              className="input-field"
-                placeholder="MFG-123"
-            />
-          </div>
-
-          <div>
-            <label className="label">Ürün Maliyeti ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.product_cost}
-                onChange={(e) => setFormData({ ...formData, product_cost: e.target.value })}
-                className="input-field"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          {/* Premium Features Section */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-            <div className="flex items-center space-x-2 mb-4">
-              <span className="text-2xl">🚀</span>
-              <h4 className="text-lg font-bold text-gray-900">Premium Özellikler</h4>
-              <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded-full">
-                PRO
-              </span>
-          </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="label">Amazon Fiyatı ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.amazon_price}
-                  onChange={(e) => setFormData({ ...formData, amazon_price: e.target.value })}
-                  className="input-field"
-                  placeholder="0.00"
-                />
-        </div>
-
-              <div>
-                <label className="label">Referans Ücreti (%)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.referral_fee_percent}
-                  onChange={(e) => setFormData({ ...formData, referral_fee_percent: e.target.value })}
-                  className="input-field"
-                  placeholder="15.00"
-                />
-        </div>
-
-              <div>
-                <label className="label">Fulfillment Ücreti ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.fulfillment_fee}
-                  onChange={(e) => setFormData({ ...formData, fulfillment_fee: e.target.value })}
-                  className="input-field"
-                  placeholder="0.00"
-                />
-        </div>
-
-              <div>
-                <label className="label">Reklam Maliyeti ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.advertising_cost}
-                  onChange={(e) => setFormData({ ...formData, advertising_cost: e.target.value })}
-                  className="input-field"
-                  placeholder="0.00"
-                />
-        </div>
-
-          <div>
-                <label className="label">İlk Yatırım ($)</label>
-            <input
-                  type="number"
-                  step="0.01"
-                  value={formData.initial_investment}
-                  onChange={(e) => setFormData({ ...formData, initial_investment: e.target.value })}
-              className="input-field"
-                  placeholder="0.00"
-            />
-          </div>
-
-              <div>
-                <label className="label">Satılan Adet</label>
-                <div className="input-field bg-gray-50 text-gray-600 flex items-center justify-between">
-                  <span>Otomatik hesaplanır (sevkiyat verilerinden)</span>
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">AUTO</span>
-                  </div>
-                </div>
-            </div>
-
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center space-x-2 text-sm text-blue-800">
-                <span className="text-lg">💡</span>
-                <span>
-                  <strong>Pro özellik:</strong> Bu alanlar otomatik kar hesaplama ve ROI analizi için kullanılır. 
-                  Satılan adet sevkiyat verilerinden otomatik hesaplanır.
-                </span>
-                  </div>
-                  </div>
-                </div>
-
-          <div>
-            <label className="label">Notlar</label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="input-field"
-              rows={3}
-              placeholder="Ürün hakkında notlar..."
-            />
-                  </div>
-
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              İptal
-            </button>
-              <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-              {isLoading ? 'Kaydediliyor...' : (product ? 'Güncelle' : 'Ekle')}
-              </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 };

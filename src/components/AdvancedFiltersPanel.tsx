@@ -17,7 +17,7 @@ export interface AdvancedFilters {
   roiRange?: { min: number; max: number };
   status?: string;
   hasProfit?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AdvancedFiltersPanelProps {
@@ -43,7 +43,7 @@ const AdvancedFiltersPanel: React.FC<AdvancedFiltersPanelProps> = ({
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [presetName, setPresetName] = useState('');
 
-  const updateFilter = (key: string, value: any) => {
+  const updateFilter = (key: string, value: unknown) => {
     onChange({
       ...filters,
       [key]: value

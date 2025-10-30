@@ -14,7 +14,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
   const steps = [
     {
       title: `Hoş Geldiniz${userName ? `, ${userName.split('@')[0]}` : ''}! 👋`,
-      description: 'Amazon FBA Tracker\'a hoş geldiniz! Ürün ve sevkiyat takibinizi kolaylaştırmak için buradayız.',
+      description: 'Planet FBA Tracker\'a hoş geldiniz! Ürün ve sevkiyat takibinizi kolaylaştırmak için buradayız.',
       icon: '🚀',
       features: [
         'Sınırsız ürün takibi',

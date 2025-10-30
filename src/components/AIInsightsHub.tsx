@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import OpenAI from 'openai';
-import { Product, Shipment } from '../types';
+import { Product, Shipment, Supplier } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AISupplierAnalysis from './AISupplierAnalysis';
+import AIShipmentOptimization from './AIShipmentOptimization';
+import AIPriceOptimization from './AIPriceOptimization';
+import { logger } from '../lib/logger';
 
 interface AIInsightsHubProps {
   products: Product[];
   shipments: Shipment[];
+  suppliers?: Supplier[];
 }
 
 interface TrendAnalysis {
@@ -31,8 +35,8 @@ interface MarketingSuggestion {
   expectedImpact: string;
 }
 
-const AIInsightsHub: React.FC<AIInsightsHubProps> = ({ products, shipments }) => {
-  const [activeTab, setActiveTab] = useState<'trends' | 'inventory' | 'marketing'>('trends');
+const AIInsightsHub: React.FC<AIInsightsHubProps> = ({ products, shipments, suppliers = [] }) => {
+  const [activeTab, setActiveTab] = useState<'trends' | 'inventory' | 'marketing' | 'suppliers' | 'shipments' | 'pricing'>('trends');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,57 +56,22 @@ const AIInsightsHub: React.FC<AIInsightsHubProps> = ({ products, shipments }) =>
     try {
       const monthlyData = calculateMonthlyMetrics();
       
-      const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-      const openai = new OpenAI({
-        apiKey: OPENAI_API_KEY,
-        dangerouslyAllowBrowser: true
-      });
+      // Use secure backend API instead of direct OpenAI call
+      const { analyzeTrends: analyzeTrendsAPI } = await import('../lib/aiApi');
 
-      const prompt = `
-Amazon FBA işletme trend analizi:
-
-Aylık Veriler (son 6 ay):
-${monthlyData.map(m => `${m.month}: ${m.shipments} sevkiyat, $${m.revenue.toFixed(2)} gelir`).join('\n')}
-
-GÖREV:
-1. Trend yönünü belirle (up/down/stable)
-2. Gelecek 3 ay için tahmin yap
-3. 3-4 önemli içgörü ver
-4. Her ay için tahmini rakam ver
-
-Kısa ve net ol. Türkçe.
-`;
-
-      const schema = `{
-  "trend": "up",
-  "forecast": "string",
-  "insights": ["string"],
-  "monthlyPrediction": [
-    {"month": "Ocak", "predicted": 0}
-  ]
-}`;
-
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Sen Amazon FBA için trend analisti bir AI\'sın. SADECE JSON döndür.'
-          },
-          {
-            role: 'user',
-            content: `${prompt}\n\nYanıtı aşağıdaki JSON formatında ver:\n${schema}`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        response_format: { type: 'json_object' }
-      });
-
-      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+      // Use secure backend API
+      const response = await analyzeTrendsAPI(monthlyData);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Trend analizi başarısız');
+      }
+      
+      const result = response.data;
+      logger.log('Trend analysis result:', result);
+      logger.log('Trend analysis insights:', result.insights);
       setTrendAnalysis(result);
-    } catch (err: any) {
-      console.error('Trend analysis error:', err);
+    } catch (err: unknown) {
+      logger.error('Trend analysis error:', err);
       setError('Trend analizi yapılamadı.');
     } finally {
       setIsLoading(false);
@@ -115,67 +84,38 @@ Kısa ve net ol. Türkçe.
 
     try {
       const topProducts = products
-        .filter(p => p.estimated_profit && p.estimated_profit > 0)
+        .filter(p => p.name) // Sadece ismi olan ürünleri al
         .sort((a, b) => (b.estimated_profit || 0) - (a.estimated_profit || 0))
         .slice(0, 10);
 
-      const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-      const openai = new OpenAI({
-        apiKey: OPENAI_API_KEY,
-        dangerouslyAllowBrowser: true
-      });
+      const { analyzeInventory: analyzeInventoryAPI } = await import('../lib/aiApi');
+      
+      const productData = topProducts.map(p => ({
+        name: p.name,
+        currentStock: 0, // current_inventory kolonu yok, varsayılan 0
+        sales: p.units_sold || 0,
+        profit: p.estimated_profit || 0
+      }));
 
-      const prompt = `
-Top 10 karlı ürün için stok analizi:
+      logger.log('Top products:', topProducts);
+      logger.log('Product data sent to AI:', productData);
+      logger.log('First product name:', topProducts[0]?.name);
 
-${topProducts.map((p, i) => `${i + 1}. ${p.name}
-   - Kar: $${p.estimated_profit?.toFixed(2)}
-   - ROI: ${p.roi_percentage?.toFixed(1)}%`).join('\n\n')}
-
-Her ürün için:
-1. Tahmini stok durumu (simüle et)
-2. Kaç gün kalacağını tahmin et
-3. Urgency (low/medium/high/critical)
-4. Önerilen aksiyon
-5. Sipariş miktarı
-
-5 ürün için array döndür.
-`;
-
-      const schema = `{
-  "alerts": [
-    {
-      "product": "string",
-      "currentStock": 0,
-      "daysLeft": 0,
-      "urgency": "high",
-      "recommendedAction": "string",
-      "recommendedQuantity": 0
-    }
-  ]
-}`;
-
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Sen Amazon FBA stok yönetimi uzmanı bir AI\'sın. SADECE JSON döndür.'
-          },
-          {
-            role: 'user',
-            content: `${prompt}\n\n${schema}`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-        response_format: { type: 'json_object' }
-      });
-
-      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
-      setInventoryAlerts(result.alerts || []);
-    } catch (err: any) {
-      console.error('Inventory analysis error:', err);
+      const response = await analyzeInventoryAPI(productData);
+      
+      logger.log('Inventory analysis response:', response);
+      logger.log('Response alerts:', response.data?.alerts);
+      
+      if (response.success && response.data) {
+        const alerts = response.data.alerts || [];
+        logger.log('Setting inventory alerts:', alerts);
+        setInventoryAlerts(Array.isArray(alerts) ? alerts : []);
+      } else {
+        logger.error('Inventory analysis failed:', response.error);
+        throw new Error(response.error || 'Inventory analysis failed');
+      }
+    } catch (err: unknown) {
+      logger.error('Inventory analysis error:', err);
       setError('Stok analizi yapılamadı.');
     } finally {
       setIsLoading(false);
@@ -187,71 +127,30 @@ Her ürün için:
     setError(null);
 
     try {
-      const totalProducts = products.length;
-      const profitableProducts = products.filter(p => (p.estimated_profit || 0) > 0).length;
-      const avgROI = products.reduce((sum, p) => sum + (p.roi_percentage || 0), 0) / products.length;
+      const topProducts = products
+        .filter(p => p.name) // Sadece ismi olan ürünleri al
+        .sort((a, b) => (b.estimated_profit || 0) - (a.estimated_profit || 0))
+        .slice(0, 10);
 
-      const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-      const openai = new OpenAI({
-        apiKey: OPENAI_API_KEY,
-        dangerouslyAllowBrowser: true
-      });
+      const { getMarketingSuggestions } = await import('../lib/aiApi');
+      
+      const productData = topProducts.map(p => ({
+        name: p.name,
+        profit: p.estimated_profit || 0,
+        sales: p.units_sold || 0,
+        roi: p.roi_percentage || 0
+      }));
 
-      const prompt = `
-Amazon FBA işletme için pazarlama stratejisi:
-
-İşletme Profili:
-- Toplam Ürün: ${totalProducts}
-- Karlı Ürün: ${profitableProducts}
-- Ortalama ROI: ${avgROI.toFixed(1)}%
-
-4-5 kategori için pazarlama önerisi ver:
-1. Amazon PPC (Sponsored Products)
-2. Social Media Marketing
-3. Email Marketing
-4. Content Marketing
-5. Influencer Partnerships
-
-Her kategori için:
-- 2-3 actionable öneri
-- Priority (high/medium/low)
-- Beklenen etki
-
-Türkçe ve somut öneriler.
-`;
-
-      const schema = `{
-  "suggestions": [
-    {
-      "category": "string",
-      "suggestions": ["string"],
-      "priority": "high",
-      "expectedImpact": "string"
-    }
-  ]
-}`;
-
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Sen Amazon FBA pazarlama uzmanı bir AI\'sın. SADECE JSON döndür.'
-          },
-          {
-            role: 'user',
-            content: `${prompt}\n\n${schema}`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-        response_format: { type: 'json_object' }
-      });
-
-      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
-      setMarketingSuggestions(result.suggestions || []);
-    } catch (err: any) {
-      console.error('Marketing suggestions error:', err);
+      const response = await getMarketingSuggestions(productData);
+      
+      if (response.success && response.data) {
+        const suggestions = response.data.suggestions || [];
+        setMarketingSuggestions(Array.isArray(suggestions) ? suggestions : []);
+      } else {
+        throw new Error(response.error || 'Marketing suggestions failed');
+      }
+    } catch (err: unknown) {
+      logger.error('Marketing suggestions error:', err);
       setError('Pazarlama önerileri oluşturulamadı.');
     } finally {
       setIsLoading(false);
@@ -294,52 +193,84 @@ Türkçe ve somut öneriler.
   };
 
   return (
-    <div className="card">
-      <div className="card-header border-b border-gray-200">
-        <h3 className="card-title">🤖 AI Insights Hub</h3>
-        <p className="text-sm text-gray-600 mt-1">Gelişmiş AI analizleri ve öneriler</p>
-      </div>
-
+    <div className="p-6">
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab('trends')}
-          className={`px-6 py-3 font-medium transition-colors ${
+          className={`px-4 py-4 font-medium transition-colors whitespace-nowrap ${
             activeTab === 'trends'
               ? 'border-b-2 border-blue-600 text-blue-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          📈 Trend Analizi
+          📈 Trend
         </button>
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`px-6 py-3 font-medium transition-colors ${
+          className={`px-4 py-4 font-medium transition-colors whitespace-nowrap ${
             activeTab === 'inventory'
               ? 'border-b-2 border-blue-600 text-blue-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          📦 Stok Optimizasyonu
+          📦 Stok
         </button>
         <button
           onClick={() => setActiveTab('marketing')}
-          className={`px-6 py-3 font-medium transition-colors ${
+          className={`px-4 py-4 font-medium transition-colors whitespace-nowrap ${
             activeTab === 'marketing'
               ? 'border-b-2 border-blue-600 text-blue-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          📣 Pazarlama Önerileri
+          📣 Pazarlama
+        </button>
+        <button
+          onClick={() => setActiveTab('suppliers')}
+          className={`px-4 py-4 font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'suppliers'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          🏭 Tedarikçi
+        </button>
+        <button
+          onClick={() => setActiveTab('shipments')}
+          className={`px-4 py-4 font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'shipments'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          🚚 Sevkiyat
+        </button>
+        <button
+          onClick={() => setActiveTab('pricing')}
+          className={`px-4 py-4 font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'pricing'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          💰 Fiyat
         </button>
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div>
         {/* Trend Analysis Tab */}
         {activeTab === 'trends' && (
           <div className="space-y-6">
-            {!trendAnalysis && !isLoading && (
+            {isLoading && (
+              <div className="text-center py-12">
+                <div className="animate-spin text-6xl block mb-4">⚙️</div>
+                <p className="text-gray-600">AI analiz yapıyor...</p>
+              </div>
+            )}
+
+            {!isLoading && !trendAnalysis && !error && (
               <div className="text-center py-12">
                 <span className="text-6xl block mb-4">📈</span>
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
@@ -353,6 +284,21 @@ Türkçe ve somut öneriler.
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   🚀 Trend Analizi Başlat
+                </button>
+              </div>
+            )}
+
+            {error && !trendAnalysis && (
+              <div className="text-center py-12">
+                <span className="text-6xl block mb-4">⚠️</span>
+                <h4 className="text-lg font-semibold text-red-600 mb-2">
+                  Hata: {error}
+                </h4>
+                <button
+                  onClick={analyzeTrends}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium mt-4"
+                >
+                  🔄 Tekrar Dene
                 </button>
               </div>
             )}
@@ -385,7 +331,7 @@ Türkçe ve somut öneriler.
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">💡 Önemli İçgörüler</h4>
                   <div className="space-y-2">
-                    {trendAnalysis.insights.map((insight, idx) => (
+                    {trendAnalysis.insights && trendAnalysis.insights.map((insight, idx) => (
                       <div key={idx} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
                         <span className="text-blue-600 font-bold">{idx + 1}.</span>
                         <p className="text-sm text-gray-700">{insight}</p>
@@ -419,7 +365,14 @@ Türkçe ve somut öneriler.
         {/* Inventory Tab */}
         {activeTab === 'inventory' && (
           <div className="space-y-6">
-            {inventoryAlerts.length === 0 && !isLoading && (
+            {isLoading && (
+              <div className="text-center py-12">
+                <div className="animate-spin text-6xl block mb-4">⚙️</div>
+                <p className="text-gray-600">AI analiz yapıyor...</p>
+              </div>
+            )}
+
+            {!isLoading && inventoryAlerts.length === 0 && !error && (
               <div className="text-center py-12">
                 <span className="text-6xl block mb-4">📦</span>
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
@@ -433,6 +386,21 @@ Türkçe ve somut öneriler.
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   🚀 Stok Analizi Başlat
+                </button>
+              </div>
+            )}
+
+            {error && (
+              <div className="text-center py-12">
+                <span className="text-6xl block mb-4">⚠️</span>
+                <h4 className="text-lg font-semibold text-red-600 mb-2">
+                  Hata: {error}
+                </h4>
+                <button
+                  onClick={analyzeInventory}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium mt-4"
+                >
+                  🔄 Tekrar Dene
                 </button>
               </div>
             )}
@@ -489,7 +457,14 @@ Türkçe ve somut öneriler.
         {/* Marketing Tab */}
         {activeTab === 'marketing' && (
           <div className="space-y-6">
-            {marketingSuggestions.length === 0 && !isLoading && (
+            {isLoading && (
+              <div className="text-center py-12">
+                <div className="animate-spin text-6xl block mb-4">⚙️</div>
+                <p className="text-gray-600">AI analiz yapıyor...</p>
+              </div>
+            )}
+
+            {!isLoading && marketingSuggestions.length === 0 && !error && (
               <div className="text-center py-12">
                 <span className="text-6xl block mb-4">📣</span>
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
@@ -503,6 +478,21 @@ Türkçe ve somut öneriler.
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   🚀 Pazarlama Önerileri Al
+                </button>
+              </div>
+            )}
+
+            {error && (
+              <div className="text-center py-12">
+                <span className="text-6xl block mb-4">⚠️</span>
+                <h4 className="text-lg font-semibold text-red-600 mb-2">
+                  Hata: {error}
+                </h4>
+                <button
+                  onClick={generateMarketingSuggestions}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium mt-4"
+                >
+                  🔄 Tekrar Dene
                 </button>
               </div>
             )}
@@ -558,24 +548,32 @@ Türkçe ve somut öneriler.
           </div>
         )}
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">AI analiz yapıyor...</p>
+        {/* Supplier Analysis Tab */}
+        {activeTab === 'suppliers' && (
+          <div className="pt-4">
+            <AISupplierAnalysis
+              suppliers={suppliers}
+              products={products}
+            />
           </div>
         )}
 
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-            <p className="text-red-700">{error}</p>
-            <button
-              onClick={() => setError(null)}
-              className="mt-2 text-sm text-red-600 hover:text-red-700"
-            >
-              Kapat
-            </button>
+        {/* Shipment Optimization Tab */}
+        {activeTab === 'shipments' && (
+          <div className="pt-4">
+            <AIShipmentOptimization
+              shipments={shipments}
+              products={products}
+            />
+          </div>
+        )}
+
+        {/* Price Optimization Tab */}
+        {activeTab === 'pricing' && (
+          <div className="pt-4">
+            <AIPriceOptimization
+              products={products}
+            />
           </div>
         )}
       </div>
@@ -584,4 +582,5 @@ Türkçe ve somut öneriler.
 };
 
 export default AIInsightsHub;
+
 

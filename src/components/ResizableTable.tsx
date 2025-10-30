@@ -12,14 +12,14 @@ interface ColumnWidths {
 const ResizableTable: React.FC<ResizableTableProps> = ({ children, className = '' }) => {
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>({
     checkbox: 48,
+    image: 80,        // Resim
     name: 200,        // Ürün Adı - daha geniş
+    category: 120,    // Kategori
     asin: 100,
     merchant_sku: 120,
     supplier: 120,
     cost: 80,         // Maliyet - daha küçük
     profit: 100,
-    roi: 80,
-    created: 120,
     actions: 120
   });
 
@@ -75,7 +75,7 @@ const ResizableTable: React.FC<ResizableTableProps> = ({ children, className = '
   useEffect(() => {
     if (tableRef.current) {
       const headers = tableRef.current.querySelectorAll('thead th');
-      const columnKeys = ['checkbox', 'name', 'asin', 'merchant_sku', 'supplier', 'cost', 'profit', 'roi', 'created', 'actions'];
+      const columnKeys = ['checkbox', 'image', 'name', 'category', 'asin', 'merchant_sku', 'supplier', 'cost', 'profit', 'actions'];
       
       headers.forEach((header, index) => {
         if (index < columnKeys.length - 1) { // Don't add to last column (actions)
@@ -121,7 +121,7 @@ const ResizableTable: React.FC<ResizableTableProps> = ({ children, className = '
   // Apply column widths to table cells
   useEffect(() => {
     if (tableRef.current) {
-      const columnKeys = ['checkbox', 'name', 'asin', 'merchant_sku', 'supplier', 'cost', 'profit', 'roi', 'created', 'actions'];
+      const columnKeys = ['checkbox', 'image', 'name', 'category', 'asin', 'merchant_sku', 'supplier', 'cost', 'profit', 'actions'];
       
       // Apply to header cells
       const headerCells = tableRef.current.querySelectorAll('thead th');

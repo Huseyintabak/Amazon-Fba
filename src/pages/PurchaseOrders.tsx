@@ -35,8 +35,8 @@ const PurchaseOrders: React.FC = () => {
       setIsLoading(true);
       const data = await purchaseOrdersApi.getAll();
       setPurchaseOrders(data);
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +46,7 @@ const PurchaseOrders: React.FC = () => {
     try {
       const data = await purchaseOrdersApi.getStats();
       setStats(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Stats error:', error);
     }
   };
@@ -58,8 +58,8 @@ const PurchaseOrders: React.FC = () => {
       loadPurchaseOrders();
       loadStats();
       setShowDeleteModal(null);
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 
@@ -255,7 +255,7 @@ const PurchaseOrders: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredPOs.map((po: any) => (
+                filteredPOs.map((po: Record<string, unknown>) => (
                   <tr key={po.id} className="table-row">
                     <td className="table-cell font-semibold text-blue-600">
                       {po.po_number}

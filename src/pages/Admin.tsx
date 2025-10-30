@@ -121,9 +121,9 @@ const Admin: React.FC = () => {
       alert(`✅ Premium hediye edildi! ${durationDays} gün boyunca Pro plan aktif.`);
       setGiftModalUser(null);
       loadAdminData(); // Refresh data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error gifting premium:', error);
-      alert(`❌ Hata: ${error.message}`);
+      alert(`❌ Hata: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -141,9 +141,9 @@ const Admin: React.FC = () => {
       alert('✅ Premium plan iptal edildi. Kullanıcı Free plana düşürüldü.');
       setSelectedUser(null);
       loadAdminData(); // Refresh data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error revoking premium:', error);
-      alert(`❌ Hata: ${error.message}`);
+      alert(`❌ Hata: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

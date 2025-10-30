@@ -1,5 +1,26 @@
 import OpenAI from 'openai';
-import type { DashboardInsight, ProductAnalysis, PriceOptimization } from './gemini';
+import { getErrorMessage } from './errorHandler';
+
+// AI Response Types
+export interface DashboardInsight {
+  type: 'success' | 'warning' | 'info';
+  title: string;
+  description: string;
+  action?: string;
+}
+
+export interface ProductAnalysis {
+  insight: string;
+  recommendation: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface PriceOptimization {
+  currentPrice: number;
+  recommendedPrice: number;
+  reason: string;
+  expectedImpact: string;
+}
 
 // OpenAI API Configuration
 // Note: In production, use environment variables instead of hardcoding
@@ -40,14 +61,18 @@ async function generateStructuredResponse<T>(
     }
 
     return JSON.parse(content);
-  } catch (error: any) {
-    console.error('OpenAI API Error:', error);
+  } catch (error: unknown) {
+    const errorMessage = getErrorMessage(error);
+    console.error('OpenAI API Error:', errorMessage);
     
-    if (error?.status === 401) {
-      throw new Error('API key geçersiz');
-    }
-    if (error?.status === 429) {
-      throw new Error('API rate limit aşıldı');
+    if (error && typeof error === 'object' && 'status' in error) {
+      const status = (error as { status: number }).status;
+      if (status === 401) {
+        throw new Error('API key geçersiz');
+      }
+      if (status === 429) {
+        throw new Error('API rate limit aşıldı');
+      }
     }
     if (error?.message?.includes('fetch')) {
       throw new Error('Bağlantı hatası');

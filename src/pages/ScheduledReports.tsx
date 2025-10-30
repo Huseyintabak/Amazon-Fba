@@ -38,8 +38,8 @@ const ScheduledReports: React.FC = () => {
       // Simulated data - in production, this would be from a database table
       const mockReports: ScheduledReport[] = [];
       setReports(mockReports);
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -62,8 +62,8 @@ const ScheduledReports: React.FC = () => {
       showToast('Planlanmış rapor oluşturuldu! (Demo Mode)', 'success');
       setShowModal(false);
       resetForm();
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 

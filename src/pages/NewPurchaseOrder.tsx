@@ -52,8 +52,8 @@ const NewPurchaseOrder: React.FC = () => {
       
       if (error) throw error;
       setSuppliers(data || []);
-    } catch (error: any) {
-      showToast(`Tedarikçiler yüklenemedi: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Tedarikçiler yüklenemedi: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 
@@ -73,8 +73,8 @@ const NewPurchaseOrder: React.FC = () => {
       
       if (error) throw error;
       setProducts((data || []) as Product[]);
-    } catch (error: any) {
-      showToast(`Ürünler yüklenemedi: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Ürünler yüklenemedi: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 
@@ -91,7 +91,7 @@ const NewPurchaseOrder: React.FC = () => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const updateItem = (index: number, field: keyof POItem, value: any) => {
+  const updateItem = (index: number, field: keyof POItem, value: string | number) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
@@ -156,8 +156,8 @@ const NewPurchaseOrder: React.FC = () => {
 
       showToast('Satın alma emri oluşturuldu!', 'success');
       navigate('/purchase-orders');
-    } catch (error: any) {
-      showToast(`Hata: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      showToast(`Hata: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsLoading(false);
     }

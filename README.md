@@ -1,6 +1,6 @@
-# 🚚 Amazon FBA Tracker - SaaS Edition
+# 🚚 Planet FBA Tracker - SaaS Edition
 
-Modern, multi-tenant Amazon FBA sevkiyat takip sistemi. React, TypeScript, Supabase ve Tailwind CSS ile geliştirilmiş SaaS uygulaması.
+Modern, multi-tenant Planet FBA sevkiyat takip sistemi. React, TypeScript, Supabase ve Tailwind CSS ile geliştirilmiş SaaS uygulaması.
 
 ## 🎯 SaaS Özellikleri
 
@@ -59,8 +59,8 @@ Modern, multi-tenant Amazon FBA sevkiyat takip sistemi. React, TypeScript, Supab
 
 1. **Repository'yi klonlayın**
 ```bash
-git clone https://github.com/Huseyintabak/Amazon-Fba.git
-cd Amazon-Fba
+git clone https://github.com/Huseyintabak/Planet-FBA-Tracker.git
+cd Planet-FBA-Tracker
 ```
 
 2. **Bağımlılıkları yükleyin**
@@ -104,7 +104,7 @@ WHERE tablename IN ('products', 'shipments');
 npm run dev
 ```
 
-Tarayıcıda: `http://localhost:5181/Amazon-Fba/`
+Tarayıcıda: `http://localhost:5181/`
 
 ## 📦 Production Build
 
@@ -131,15 +131,61 @@ sudo ./server-deploy.sh
 
 # Sadece güncelleme
 sudo ./update.sh
-
-# Docker ile deployment
-sudo ./docker-deploy.sh
 ```
 
 ### Manuel Deployment
 1. `npm run build` ile dist klasörü oluşturun
 2. dist klasörünü web sunucunuza yükleyin
 3. SPA routing için tüm istekleri index.html'e yönlendirin
+
+## 🧪 Testing
+
+### Test Setup
+
+The project uses **Vitest** for unit testing and **React Testing Library** for component testing.
+
+### Run Tests
+
+```bash
+# Run all tests
+npm run test
+
+# Run with UI
+npm run test:ui
+
+# Run with coverage
+npm run test:coverage
+```
+
+### Test Structure
+
+```
+src/
+├── lib/__tests__/       # Unit tests for utilities
+├── pages/Products/hooks/   # Custom hooks (testable)
+└── test/setup.ts       # Test configuration
+```
+
+### Current Test Coverage
+
+- ✅ Logger utility tests
+- ⏳ API functions tests (in progress)
+- ⏳ Component tests (in progress)
+- ⏳ E2E tests (pending)
+
+### Writing Tests
+
+```typescript
+// Example test
+import { describe, it, expect } from 'vitest';
+import { logger } from '../lib/logger';
+
+describe('logger', () => {
+  it('should log in development mode', () => {
+    // Test implementation
+  });
+});
+```
 
 ## 📁 Proje Yapısı
 
@@ -149,7 +195,16 @@ src/
 ├── contexts/           # React Contexts
 ├── hooks/              # Custom Hooks
 ├── lib/                # Utility Functions
+│   ├── __tests__/     # Unit tests
+│   ├── logger.ts      # Environment-aware logger
+│   ├── schemas.ts     # Zod validation schemas
+│   └── supabaseApi.ts # API functions
 ├── pages/              # Sayfa Bileşenleri
+│   └── Products/
+│       ├── components/ # Page-specific components
+│       └── hooks/      # Page-specific hooks
+├── stores/             # State management (Zustand)
+├── test/               # Test setup and utilities
 ├── stores/              # Zustand Stores
 └── types/               # TypeScript Types
 ```
@@ -205,8 +260,8 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 ## 📞 İletişim
 
 - **GitHub**: [@Huseyintabak](https://github.com/Huseyintabak)
-- **Repository**: [Amazon-Fba](https://github.com/Huseyintabak/Amazon-Fba)
+- **Repository**: [Planet-FBA-Tracker](https://github.com/Huseyintabak/Planet-FBA-Tracker)
 
 ---
 
-**🚀 Amazon FBA Tracker - Modern sevkiyat takip sistemi**
+**🚀 Planet FBA Tracker - Modern sevkiyat takip sistemi**

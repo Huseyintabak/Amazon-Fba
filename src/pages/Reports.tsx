@@ -16,14 +16,21 @@ import {
   Area,
   AreaChart
 } from 'recharts';
-import { useSupabaseStore } from '../stores/useSupabaseStore';
+import { useStore } from '../stores/useStore';
 import { supabase } from '../lib/supabase';
-import { CostBreakdown, ROIPerformance } from '../types';
+import { CostBreakdown, ROIPerformance, ShipmentItem } from '../types';
 import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 import PremiumBlur from '../components/PremiumBlur';
+import { ReportSummaryCards } from './Reports/components/ReportSummaryCards';
+import { ReportFilters } from './Reports/components/ReportFilters';
+import { MonthlyShipmentsChart } from './Reports/components/MonthlyShipmentsChart';
+import { MonthlyCostTrendChart } from './Reports/components/MonthlyCostTrendChart';
+import { CarrierDistributionChart } from './Reports/components/CarrierDistributionChart';
+import { StatusDistributionChart } from './Reports/components/StatusDistributionChart';
 
 const Reports: React.FC = () => {
-  const { shipments, loadAllData } = useSupabaseStore();
+  const { shipments, products, loadAllData } = useStore();
+  const [shipmentItems, setShipmentItems] = useState<ShipmentItem[]>([]);
   const [activeTab, setActiveTab] = useState<'shipments' | 'roi'>('shipments');
   
   // Initialize with last 90 days
@@ -50,7 +57,51 @@ const Reports: React.FC = () => {
   // Load all data on component mount
   React.useEffect(() => {
     loadAllData();
+    loadMaterializedData();
+    loadShipmentItems();
   }, [loadAllData]);
+
+  // Load shipment items
+  const loadShipmentItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shipment_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      console.log('Loaded shipment items:', data?.length || 0);
+      setShipmentItems(data || []);
+    } catch (error) {
+      console.error('Error loading shipment items:', error);
+    }
+  };
+
+  // Load data from materialized views
+  const loadMaterializedData = async () => {
+    try {
+      // Load product performance data
+      const { data: productData, error: productError } = await supabase
+        .from('mv_product_performance')
+        .select('*')
+        .order('roi_percentage', { ascending: false });
+
+      if (productError) throw productError;
+
+      // Load supplier performance data
+      const { data: supplierData, error: supplierError } = await supabase
+        .from('mv_supplier_performance')
+        .select('*')
+        .order('avg_roi', { ascending: false });
+
+      if (supplierError) throw supplierError;
+
+      console.log('Materialized data loaded:', { productData, supplierData });
+    } catch (error) {
+      console.error('Error loading materialized data:', error);
+    }
+  };
 
   // Load ROI data when tab changes
   useEffect(() => {
@@ -169,25 +220,56 @@ const Reports: React.FC = () => {
   const topProducts = useMemo(() => {
     const productCounts = new Map<string, { name: string; quantity: number; totalCost: number }>();
     
-    // For now, we'll use mock data for top products
-    // TODO: Implement proper shipment items integration
-    const mockTopProducts = [
-      { name: 'Wireless Bluetooth Headphones', quantity: 15, totalCost: 389.85 },
-      { name: 'Smart Fitness Tracker', quantity: 8, totalCost: 719.92 },
-      { name: 'USB-C Charging Cable', quantity: 25, totalCost: 324.75 },
-      { name: 'Portable Power Bank', quantity: 12, totalCost: 551.88 },
-      { name: 'Bluetooth Speaker', quantity: 6, totalCost: 395.94 }
-    ];
+    // Filter shipment items by filtered shipments
+    const filteredShipmentIds = new Set(filteredShipments.map(s => s.id));
+    const relevantItems = shipmentItems.filter(item => filteredShipmentIds.has(item.shipment_id));
     
-    mockTopProducts.forEach(product => {
-      const key = product.name;
-      productCounts.set(key, product);
+    // Create a map of shipment_id to total shipping cost
+    const shipmentCostMap = new Map<string, number>();
+    filteredShipments.forEach(shipment => {
+      shipmentCostMap.set(shipment.id, shipment.total_shipping_cost || 0);
+    });
+    
+    // Aggregate by product
+    relevantItems.forEach(item => {
+      const productId = item.product_id;
+      const product = products.find(p => p.id === productId);
+      const productName = product?.name || 'Unknown Product';
+      
+      // Get unit shipping cost from item, or calculate from shipment total
+      let unitCost = item.unit_shipping_cost;
+      
+      // If unit cost is 0, distribute shipment total cost proportionally
+      if (unitCost === 0 || unitCost === null) {
+        const shipmentTotalCost = shipmentCostMap.get(item.shipment_id) || 0;
+        const shipmentItemsTotal = relevantItems
+          .filter(i => i.shipment_id === item.shipment_id)
+          .reduce((sum, i) => sum + i.quantity, 0);
+        
+        if (shipmentItemsTotal > 0) {
+          unitCost = shipmentTotalCost / shipmentItemsTotal;
+        }
+      }
+      
+      const itemCost = unitCost * item.quantity;
+      
+      if (productCounts.has(productName)) {
+        const existing = productCounts.get(productName)!;
+        existing.quantity += item.quantity;
+        existing.totalCost += itemCost;
+      } else {
+        productCounts.set(productName, {
+          name: productName,
+          quantity: item.quantity,
+          totalCost: itemCost
+        });
+      }
     });
 
     return Array.from(productCounts.values())
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 10);
-  }, [filteredShipments]);
+  }, [filteredShipments, shipmentItems, products]);
 
   // Color palette for charts
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
@@ -282,187 +364,26 @@ const Reports: React.FC = () => {
       {/* Shipments Tab Content */}
       {activeTab === 'shipments' && (
         <>
-          {/* Filters */}
-          <div className="card">
-            <h3 className="card-title mb-4">Filtreler</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="label">Tarih Aralığı</label>
-                <DateRangePicker
-                  value={dateRange}
-                  onChange={setDateRange}
-                />
-              </div>
-              <div>
-                <label className="label">Kargo Firması</label>
-                <select
-                  value={selectedCarrier}
-                  onChange={(e) => setSelectedCarrier(e.target.value)}
-                  className="filter-select"
-                >
-                  <option value="all">Tüm Kargo Firmaları</option>
-                  <option value="UPS">UPS</option>
-                  <option value="FedEx">FedEx</option>
-                  <option value="DHL">DHL</option>
-                  <option value="Amazon Logistics">Amazon Logistics</option>
-                </select>
-              </div>
-              <div>
-                <label className="label">Durum</label>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="filter-select"
-                >
-                  <option value="all">Tüm Durumlar</option>
-                  <option value="completed">Tamamlandı</option>
-                  <option value="draft">Taslak</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <ReportFilters
+            dateRange={dateRange}
+            selectedCarrier={selectedCarrier}
+            selectedStatus={selectedStatus}
+            onDateRangeChange={setDateRange}
+            onCarrierChange={setSelectedCarrier}
+            onStatusChange={setSelectedStatus}
+          />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="card">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-blue-100">
-              <span className="text-2xl">📊</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Toplam Sevkiyat</p>
-              <p className="text-2xl font-bold text-gray-900">{filteredShipments.length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-green-100">
-              <span className="text-2xl">💰</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Toplam Maliyet</p>
-              <p className="text-2xl font-bold text-gray-900">
-                ${filteredShipments.reduce((sum, s) => sum + s.total_shipping_cost, 0).toFixed(2)}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-purple-100">
-              <span className="text-2xl">📈</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Ortalama Maliyet</p>
-              <p className="text-2xl font-bold text-gray-900">
-                ${filteredShipments.length > 0 ? (filteredShipments.reduce((sum, s) => sum + s.total_shipping_cost, 0) / filteredShipments.length).toFixed(2) : '0.00'}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-orange-100">
-              <span className="text-2xl">🚚</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Aktif Kargo Firması</p>
-              <p className="text-2xl font-bold text-gray-900">{carrierData.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+          <ReportSummaryCards
+            filteredShipments={filteredShipments}
+            carrierCount={carrierData.length}
+          />
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Monthly Shipments Chart */}
-        <div className="card">
-          <h3 className="card-title mb-4">Aylık Sevkiyat Dağılımı</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="shipments" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <MonthlyShipmentsChart data={monthlyData} />
+            <MonthlyCostTrendChart data={monthlyData} />
+            <CarrierDistributionChart data={carrierData} />
+            <StatusDistributionChart data={statusData} />
           </div>
-        </div>
-
-        {/* Monthly Cost Trend */}
-        <div className="card">
-          <h3 className="card-title mb-4">Aylık Kargo Maliyeti Trendi</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'Maliyet']} />
-                <Area type="monotone" dataKey="shipping_cost" stroke="#10B981" fill="#10B981" fillOpacity={0.3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Carrier Distribution */}
-        <div className="card">
-          <h3 className="card-title mb-4">Kargo Firması Dağılımı</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={carrierData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {carrierData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Status Distribution */}
-        <div className="card">
-          <h3 className="card-title mb-4">Durum Dağılımı</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name} (${value})`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
 
       {/* Top Products Table */}
       <div className="card">
@@ -652,7 +573,7 @@ const Reports: React.FC = () => {
                         />
                         <YAxis label={{ value: 'ROI %', angle: -90, position: 'insideLeft' }} />
                         <Tooltip 
-                          formatter={(value: any) => [`${value}%`, 'ROI']}
+                          formatter={(value: number | string) => [`${value}%`, 'ROI']}
                           labelFormatter={(label) => `Ürün: ${label}`}
                         />
                         <Line 
@@ -682,7 +603,7 @@ const Reports: React.FC = () => {
                           tickFormatter={(value) => value?.substring(0, 15) + '...' || ''}
                         />
                         <YAxis label={{ value: 'Tutar ($)', angle: -90, position: 'insideLeft' }} />
-                        <Tooltip formatter={(value: any) => [`$${value}`, '']} />
+                        <Tooltip formatter={(value: number | string) => [`$${value}`, '']} />
                         <Bar dataKey="revenue_generated" fill="#10B981" name="Gelir" />
                         <Bar dataKey="net_profit" fill="#3B82F6" name="Net Kar" />
                       </BarChart>

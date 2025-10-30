@@ -50,8 +50,8 @@ const Login: React.FC = () => {
           navigate('/');
         }
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
       showToast('Bir hata oluştu', 'error');
     } finally {
       setLoading(false);
@@ -85,11 +85,11 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-primary shadow-lg">
-            <span className="text-3xl">🚚</span>
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl shadow-lg">
+            <img src="/logo.svg" alt="Planet FBA Tracker" className="w-full h-full" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Amazon FBA Tracker
+            Planet FBA Tracker
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Sevkiyat takip sisteminize hoş geldiniz

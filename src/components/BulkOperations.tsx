@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import { supabase } from '../lib/supabase';
+import { getErrorMessage } from '../lib/errorHandler';
 
 interface BulkOperationsProps {
   selectedCount: number;
@@ -121,8 +122,8 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedProducts, onClose
         
         if (error) throw error;
         setSuppliers(data || []);
-      } catch (error: any) {
-        console.error('Tedarikçiler yüklenemedi:', error.message);
+      } catch (error: unknown) {
+        console.error('Tedarikçiler yüklenemedi:', getErrorMessage(error));
       }
     };
 

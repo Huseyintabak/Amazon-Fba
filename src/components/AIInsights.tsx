@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateDashboardInsights, DashboardInsight } from '../lib/gemini';
+import { generateDashboardInsights, type DashboardInsight } from '../lib/openai';
 import { Product } from '../types';
 
 interface AIInsightsProps {
@@ -61,15 +61,15 @@ const AIInsights: React.FC<AIInsightsProps> = ({
         bottomProducts
       };
 
-      console.log('AI Insights - Sending data:', data);
+      logger.log('AI Insights - Sending data:', data);
 
       const aiInsights = await generateDashboardInsights(data);
-      console.log('AI Insights - Received:', aiInsights);
+      logger.log('AI Insights - Received:', aiInsights);
       
       setInsights(aiInsights);
-    } catch (err: any) {
-      console.error('AI Insights error:', err);
-      const errorMessage = err?.message || 'AI önerileri yüklenemedi.';
+    } catch (err: unknown) {
+      logger.error('AI Insights error:', err);
+      const errorMessage = (err instanceof Error ? err.message : 'AI önerileri yüklenemedi.') || 'AI önerileri yüklenemedi.';
       setError(`${errorMessage} (CORS veya API hatası olabilir)`);
     } finally {
       setIsLoading(false);
@@ -200,7 +200,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({
               </p>
               <p className="text-xs text-gray-500 mb-4">
                 {products.length > 0 
-                  ? 'Gemini Pro ile akıllı öneriler alın!'
+                  ? 'OpenAI GPT-4 ile akıllı öneriler alın!'
                   : 'Önce birkaç ürün ekleyin.'}
               </p>
               <button
@@ -222,7 +222,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({
       {isExpanded && !isLoading && !error && insights.length > 0 && (
         <div className="mt-4 pt-3 border-t border-purple-200">
           <p className="text-xs text-gray-500 text-center">
-            💡 AI önerileri Gemini Pro tarafından oluşturulmuştur.
+            💡 AI önerileri OpenAI GPT-4 tarafından oluşturulmuştur.
           </p>
         </div>
       )}
