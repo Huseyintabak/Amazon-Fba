@@ -4,7 +4,7 @@ import { useStore } from '../stores/useStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgradeRedirect } from '../hooks/useUpgradeRedirect';
 import { useCache, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
-import { productsApi, shipmentsApi } from '../lib/supabaseApi';
+import { productsApi, shipmentsApi, profitReportsApi } from '../lib/supabaseApi';
 import WelcomeModal from '../components/WelcomeModal';
 import { StatCard } from './Dashboard/components/StatCard';
 import { MonthlyChart } from './Dashboard/components/MonthlyChart';
@@ -178,12 +178,26 @@ const Dashboard: React.FC = () => {
   }, [filteredShipments]);
 
   // Top products by profit (from filtered products)
-  const topProducts = useMemo(() => {
-    return [...filteredProducts]
-      .filter(p => (p.estimated_profit || 0) > 0)
-      .sort((a, b) => (b.estimated_profit || 0) - (a.estimated_profit || 0))
-      .slice(0, 5);
-  }, [filteredProducts]);
+  const [topProfitProducts, setTopProfitProducts] = useState<{ name: string; net_profit: number; profit_margin: number; product_id: string }[]>([]);
+
+  useEffect(() => {
+    const loadProfits = async () => {
+      try {
+        const data = await profitReportsApi.getProductProfits(5);
+        setTopProfitProducts(
+          data.map(r => ({
+            name: r.name,
+            net_profit: r.net_profit,
+            profit_margin: r.profit_margin * 100,
+            product_id: r.product_id,
+          }))
+        );
+      } catch {
+        setTopProfitProducts([]);
+      }
+    };
+    loadProfits();
+  }, []);
 
   // Get trend label based on date range
   const getTrendLabel = () => {
@@ -301,18 +315,18 @@ const Dashboard: React.FC = () => {
           {/* Monthly Performance */}
           <MonthlyChart data={monthlyData} />
 
-          {/* Top Products by Profit */}
+          {/* Top Products by Profit (from shipment_items.sale_price) */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="mb-6">
               <h3 className="text-lg font-bold text-gray-900">En Karlı Ürünler</h3>
               <p className="text-sm text-gray-500 mt-1">Top 5 yüksek kar marjlı ürünler</p>
             </div>
-            {topProducts.length > 0 ? (
+            {topProfitProducts.length > 0 ? (
               <div className="space-y-3">
-                {topProducts.map((product, index) => (
+                {topProfitProducts.map((product, index) => (
                   <Link
-                    key={product.id}
-                    to={`/products/${product.id}`}
+                    key={product.product_id}
+                    to={`/products/${product.product_id}`}
                     className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-gray-50 to-white hover:from-blue-50 hover:to-white border border-gray-100 hover:border-blue-200 transition-all duration-200 group"
                   >
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -335,7 +349,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="text-right ml-4">
                       <p className="text-sm font-bold text-green-600">
-                        ${product.estimated_profit?.toFixed(2)}
+                        ${product.net_profit.toFixed(2)}
                       </p>
                       <p className="text-xs text-gray-400">kar</p>
                     </div>

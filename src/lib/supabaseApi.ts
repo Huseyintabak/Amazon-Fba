@@ -1,5 +1,5 @@
 import { supabase, supabaseTyped } from './supabase';
-import { Product, Shipment, ShipmentItem, DashboardStats, PurchaseOrder, PurchaseOrderItem, Supplier, Category } from '../types';
+import { Product, Shipment, ShipmentItem, DashboardStats, PurchaseOrder, PurchaseOrderItem, Supplier, Category, ProductProfitReport } from '../types';
 import { logger } from './logger';
 
 // Helper to get current user ID from session
@@ -404,6 +404,23 @@ export const dashboardApi = {
 
     if (error) throw error;
     return data || [];
+  }
+};
+
+// =====================================================
+// PROFIT REPORTS API
+// =====================================================
+
+export const profitReportsApi = {
+  async getProductProfits(limit = 5): Promise<ProductProfitReport[]> {
+    const { data, error } = await supabase
+      .from('product_profit_reports')
+      .select('*')
+      .order('net_profit', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return (data || []) as unknown as ProductProfitReport[];
   }
 };
 

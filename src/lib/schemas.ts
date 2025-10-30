@@ -44,6 +44,7 @@ export const shipmentItemSchema = z.object({
   product_id: z.string().uuid(),
   quantity: z.number().int().min(1, 'Miktar en az 1 olmalı'),
   unit_cost: z.number().min(0).optional(),
+  sale_price: z.number().min(0).optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });

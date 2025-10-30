@@ -248,6 +248,15 @@ CREATE POLICY "Users can delete own shipment items" ON shipment_items
 -- 6. FUNCTIONS & TRIGGERS
 -- =====================================================
 
+-- Add sale_price to shipment_items if missing
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'shipment_items' AND column_name = 'sale_price') THEN
+        ALTER TABLE shipment_items ADD COLUMN sale_price NUMERIC(12,2);
+    END IF;
+END $$;
+
 -- Function to create profile on user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -454,6 +463,33 @@ FROM products p
 LEFT JOIN shipment_items si ON p.id = si.product_id
 LEFT JOIN shipments s ON si.shipment_id = s.id AND s.user_id = p.user_id
 GROUP BY p.id, p.user_id, p.asin, p.name, p.manufacturer, p.product_cost;
+
+-- Product Profit Reports (uses sale_price for revenue and product_cost for COGS)
+DROP VIEW IF EXISTS product_profit_reports;
+CREATE OR REPLACE VIEW product_profit_reports AS
+SELECT 
+    p.id AS product_id,
+    p.name,
+    p.asin,
+    COALESCE(SUM(si.quantity), 0) AS total_quantity,
+    COALESCE(SUM(si.quantity * COALESCE(si.sale_price, 0)), 0) AS total_revenue,
+    COALESCE(SUM(si.quantity * COALESCE(p.product_cost, 0)), 0) AS cogs,
+    COALESCE(SUM(si.quantity * COALESCE(si.unit_shipping_cost, 0)), 0) AS shipping_cost,
+    COALESCE(SUM(si.quantity * COALESCE(si.sale_price, 0)), 0) 
+      - COALESCE(SUM(si.quantity * COALESCE(p.product_cost, 0)), 0)
+      - COALESCE(SUM(si.quantity * COALESCE(si.unit_shipping_cost, 0)), 0) AS net_profit,
+    CASE 
+      WHEN COALESCE(SUM(si.quantity * COALESCE(si.sale_price, 0)), 0) > 0 THEN
+        (COALESCE(SUM(si.quantity * COALESCE(si.sale_price, 0)), 0) 
+         - COALESCE(SUM(si.quantity * COALESCE(p.product_cost, 0)), 0)
+         - COALESCE(SUM(si.quantity * COALESCE(si.unit_shipping_cost, 0)), 0))
+        / COALESCE(SUM(si.quantity * COALESCE(si.sale_price, 0)), 0)
+      ELSE 0
+    END AS profit_margin
+FROM products p
+LEFT JOIN shipment_items si ON p.id = si.product_id
+LEFT JOIN shipments s ON si.shipment_id = s.id AND s.user_id = p.user_id
+GROUP BY p.id, p.name, p.asin;
 
 -- =====================================================
 -- 8. HELPER FUNCTIONS

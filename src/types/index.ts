@@ -174,9 +174,24 @@ export interface ShipmentItem {
   product_id: string;
   quantity: number;
   unit_shipping_cost: number;
+  // New: selling price per unit for profit calculations
+  sale_price?: number;
   barcode_scanned: boolean;
   created_at: string;
   product?: Product;
+}
+
+// Aggregated product profit report (from DB view)
+export interface ProductProfitReport {
+  product_id: string;
+  name: string;
+  asin: string;
+  total_quantity: number;
+  total_revenue: number; // sum(quantity * sale_price)
+  cogs: number; // sum(quantity * product_cost)
+  shipping_cost: number; // sum(quantity * unit_shipping_cost)
+  net_profit: number; // total_revenue - cogs - shipping_cost
+  profit_margin: number; // net_profit / total_revenue
 }
 
 export interface DashboardStats {
